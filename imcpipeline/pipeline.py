@@ -6,18 +6,19 @@ from os.path import join as pjoin
 import sys
 from argparse import ArgumentParser
 import subprocess
-import logging
 import re
 import urllib.request
 import textwrap
 
-from colorama import Fore
 import pandas as pd
 from imctools.scripts import ometiff2analysis
 from imctools.scripts import ome2micat
 from imctools.scripts import probablity2uncertainty
 from imctools.scripts import convertfolder2imcfolder
 from imctools.scripts import exportacquisitioncsv
+
+
+from imcpipeline import setup_logger
 
 
 STEPS = [
@@ -64,18 +65,6 @@ def main():
             logger.info("Doing '%s' step." % args.step)
             eval(args.step)()
             logger.info("Done with '%s' step." % args.step)
-
-
-def setup_logger(level=logging.DEBUG):
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(level)
-    formatter = logging.Formatter(Fore.BLUE + "%(asctime)s - %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    return logger
 
 
 def get_cli_arguments():
