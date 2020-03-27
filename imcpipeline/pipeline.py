@@ -18,7 +18,7 @@ from imctools.scripts import convertfolder2imcfolder
 from imctools.scripts import exportacquisitioncsv
 
 
-from imcpipeline import setup_logger
+from imcpipeline import LOGGER
 
 
 STEPS = [
@@ -40,10 +40,10 @@ DOCKER_IMAGE = "afrendeiro/cellprofiler"  # "cellprofiler/cellprofiler"
 
 def main():
     global args
-    global logger
-    logger = setup_logger()
+    global LOGGER
+    LOGGER
 
-    logger.info("Starting pipeline")
+    LOGGER.info("Starting pipeline")
     args = get_cli_arguments()
 
     for name, path in args.dirs.items():
@@ -58,13 +58,13 @@ def main():
     finally:
         if args.step == "all":
             for step in STEPS[1:]:
-                logger.info("Doing '%s' step." % step)
+                LOGGER.info("Doing '%s' step." % step)
                 eval(step)()
-                logger.info("Done with '%s' step." % step)
+                LOGGER.info("Done with '%s' step." % step)
         else:
-            logger.info("Doing '%s' step." % args.step)
+            LOGGER.info("Doing '%s' step." % args.step)
             eval(args.step)()
-            logger.info("Done with '%s' step." % args.step)
+            LOGGER.info("Done with '%s' step." % args.step)
 
 
 def get_cli_arguments():
@@ -169,7 +169,7 @@ def check_requirements(func):
         import shutil
         for run in ['docker', 'singularity']:
             if shutil.which("docker"):
-                logger.debug("Selecting %s as container runner." % run)
+                LOGGER.debug("Selecting %s as container runner." % run)
                 return run
         raise ValueError("Neither docker or singularity are available!")
 
@@ -215,16 +215,16 @@ def get_docker_image_or_pull():
                 if line.split(" ")[0] == DOCKER_IMAGE:
                     return True
         except FileNotFoundError:
-            logger.error("Docker installation not detected.")
+            LOGGER.error("Docker installation not detected.")
             raise
         except IndexError:
             pass
         return False
 
     if not check_image():
-        logger.debug("Found docker image.")
+        LOGGER.debug("Found docker image.")
         # build
-        logger.debug("Did not find cellprofiler docker image. Will build.")
+        LOGGER.debug("Did not find cellprofiler docker image. Will build.")
         cmd = f"docker pull {DOCKER_IMAGE}"
         run_shell_command(cmd)
     args.docker_image = DOCKER_IMAGE
@@ -372,9 +372,9 @@ def prepare():
 def train():
     """Inputs are the files in ilastik/*.h5"""
     if args.step == 'all' and args.ilastik_model is not None:
-        logger.info("Pre-trained model provided. Skipping training step.")
+        LOGGER.info("Pre-trained model provided. Skipping training step.")
     else:
-        logger.info("No model provided. Launching interactive ilastik session.")
+        LOGGER.info("No model provided. Launching interactive ilastik session.")
         cmd = f"""{args.ilastik_sh_path}"""
         run_shell_command(cmd)
 
@@ -438,7 +438,7 @@ def quantify():
         .replace("b'", "")
         .replace("'", "")
     )
-    logger.info(f"Changing the channel number to {args.channel_number}.")
+    LOGGER.info(f"Changing the channel number to {args.channel_number}.")
 
     with open(pipeline_file, "r") as ihandle:
         with open(new_pipeline_file, "w") as ohandle:
@@ -505,7 +505,7 @@ def uncertainty():
 
 
 def run_shell_command(cmd):
-    logger.debug("Running command:\n%s" % textwrap.dedent(cmd) + "\n")
+    LOGGER.debug("Running command:\n%s" % textwrap.dedent(cmd) + "\n")
     # cmd = cmd)
     c = re.findall(r"\S+", cmd.replace("\\\n", ""))
     if not args.dry_run:
