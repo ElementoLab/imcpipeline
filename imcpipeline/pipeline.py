@@ -387,7 +387,7 @@ def predict():
         --project {args.ilastik_model} \\
         """
     # Shell expansion of input files won't happen in subprocess call
-    cmd += " ".join(glob(f"{args.dirs['analysis']}/*_s2.h5"))
+    cmd += " ".join([x.replace(" ", r"\ ") for x in glob(f"{args.dirs['analysis']}/*_s2.h5")])
     run_shell_command(cmd)
 
 
