@@ -72,59 +72,108 @@ def get_cli_arguments():
     out = pjoin(os.curdir, "pipeline")
 
     # Software
-    choices = ['docker', 'singularity']
-    parser.add_argument("--container", dest="containerized", default=None, choices=choices)
-    parser.add_argument("--docker-image", dest="docker_image", default=DOCKER_IMAGE)
+    choices = ["docker", "singularity"]
+    msg = (
+        f"The container engine to use, one of {''.join(choices)}."
+        "Default is not using any but CellProfiler must be in PATH."
+    )
+    parser.add_argument(
+        "--container",
+        dest="containerized",
+        default=None,
+        choices=choices,
+        help=msg,
+    )
+    msg = f"The container image to use. Defaults to {DOCKER_IMAGE}"
+    parser.add_argument(
+        "--docker-image", dest="docker_image", default=DOCKER_IMAGE, help=msg
+    )
 
     # # if cellprofiler locations do not exist, clone to some default location
+    msg = "Path to CellProfiler pipeline. If not given will be cloned."
     parser.add_argument(
         "--cellprofiler-pipeline-path",
         dest="cellprofiler_pipeline_path",
         default=None,  # "src/ImcSegmentationPipeline/"
+        help=msg,
     )
+    msg = "Path to CellProfiler plugins. If not given will be cloned."
     parser.add_argument(
         "--cellprofiler-plugin-path",
         dest="cellprofiler_plugin_path",
         default=None,  # "/home/afr/Documents/workspace/clones/ImcPluginsCP"
+        help=msg,
     )
+    msg = "Path to Ilastik. If not given will be downloaded."
     parser.add_argument(
         "--ilastik-path",
         dest="ilastik_sh_path",
         default=None,  # "src/ilastik-1.3.3post2-Linux/run_ilastik.sh",
+        help=msg,
     )
     # Input
     parser.add_argument("--file-regexp", dest="file_regexp", default=".*.zip")
-    parser.add_argument("--csv-pannel", dest="csv_pannel", default=None)
+    msg = "Path to CSV annotation with panel information."
     parser.add_argument(
-        "--csv-pannel-metal", dest="csv_pannel_metal", default="Metal Tag"
+        "--csv-pannel", dest="csv_pannel", default=None, help=msg
     )
+    msg = "Column in CSV with metal tag annotation."
     parser.add_argument(
-        "--csv-pannel-ilastik", dest="csv_pannel_ilastik", default="ilastik"
+        "--csv-pannel-metal",
+        dest="csv_pannel_metal",
+        default="Metal Tag",
+        help=msg,
+    )
+    msg = (
+        "Column in CSV with boolean annotation of whether the channel"
+        " be used for ilastik model.")
+    parser.add_argument(
+        "--csv-pannel-ilastik",
+        dest="csv_pannel_ilastik",
+        default="ilastik",
+        help=msg,
     )
     parser.add_argument(
         "--csv-pannel-full", dest="csv_pannel_full", default="full"
     )
+    msg = (
+        "Directory with input files. More than one value is possible "
+        " -just make sure this option is not immediately before the positional argument."
+    )
     parser.add_argument(
-        "-i", "--input-dirs", nargs="+", dest="input_dirs", default=None
+        "-i",
+        "--input-dirs",
+        nargs="+",
+        dest="input_dirs",
+        default=None,
+        help=msg,
     )
 
     # Pre-trained model for classification (ilastik)
+    msg = "Path to pre-trained ilastik model. If not given will start interactive session."
     parser.add_argument(
-        "-m", "--ilastik-model", dest="ilastik_model", default=None
+        "-m", "--ilastik-model", dest="ilastik_model", default=None, help=msg
     )
     # /home/afr/projects/data/fluidigm_example_data/fluidigm_example_data.ilp
 
+    msg = "Whether existing files should be overwritten."
     parser.add_argument("--overwrite", action="store_true")
 
     # Pipeline steps
     choices = STEPS + [str(x) for x in range(len(STEPS))]
-    parser.add_argument(
-        "-s", "--step", dest="step", default="all", choices=choices
+    msg = (
+        "Step of the pipeline to perform. 'all' will perform all in sequence."
+        f"Options: {', '.join(choices)}"
     )
     parser.add_argument(
-        "-d", "--dry-run", dest="dry_run", action="store_true"
+        "-s", "--step", dest="step", default="all", choices=choices, help=msg
     )
-    parser.add_argument(dest="output_dir", default=out)
+    msg = "Whether to not actually run any command. Useful for testing."
+    parser.add_argument(
+        "-d", "--dry-run", dest="dry_run", action="store_true", help=msg
+    )
+    msg = "Directory for output files."
+    parser.add_argument(dest="output_dir", default=out, help=msg)
 
     # Parse and complete with derived info
     args = parser.parse_args()
@@ -141,7 +190,7 @@ def get_cli_arguments():
     args.dirs = dirs
 
     if args.containerized is not None:
-        dirbind = {"docker": "-v", "singularity": '-B'}
+        dirbind = {"docker": "-v", "singularity": "-B"}
         args.dirbind = dirbind[args.containerized]
 
     if args.csv_pannel is None:
@@ -152,7 +201,9 @@ def get_cli_arguments():
     if args.csv_pannel is not None:
         # with open(args.csv_pannel, "r") as handle:
         #     args.channel_number = len(handle.read().strip().split("\n")) - 1
-        args.channel_number = pd.read_csv(args.csv_pannel).query("full == 1").shape[0]
+        args.channel_number = (
+            pd.read_csv(args.csv_pannel).query("full == 1").shape[0]
+        )
 
     args.suffix_mask = "_mask.tiff"
     args.suffix_probablities = "_Probabilities"
@@ -167,7 +218,8 @@ def get_cli_arguments():
 def check_requirements(func):
     def docker_or_singularity():
         import shutil
-        for run in ['docker', 'singularity']:
+
+        for run in ["docker", "singularity"]:
             if shutil.which("docker"):
                 LOGGER.debug("Selecting %s as container runner." % run)
                 return run
@@ -175,10 +227,10 @@ def check_requirements(func):
 
     def inner():
         if args.containerized is not None:
-            if args.containerized == 'docker':
+            if args.containerized == "docker":
                 if args.docker_image != DOCKER_IMAGE:
                     get_docker_image_or_pull()
-            elif args.containerized == 'docker':
+            elif args.containerized == "docker":
                 args.docker_image = "docker://" + args.docker_image
         if args.cellprofiler_plugin_path is None:
             get_zanotelli_code("cellprofiler_plugin_path", "ImcPluginsCP")
@@ -238,7 +290,9 @@ def check_ilastik(func):
         run_shell_command(f"tar xf {pjoin('src', file)}")
 
     def inner():
-        def_ilastik_sh_path = pjoin("src", "ilastik-1.3.3post2-Linux", "run_ilastik.sh")
+        def_ilastik_sh_path = pjoin(
+            "src", "ilastik-1.3.3post2-Linux", "run_ilastik.sh"
+        )
         if args.ilastik_sh_path is None:
             if not os.path.exists(def_ilastik_sh_path):
                 get_ilastik()
@@ -336,8 +390,9 @@ def prepare():
         if args.containerized:
             extra = (
                 "--name cellprofiler_prepare_ilastik --rm"
-                if args.containerized == 'docker'
-                else "")
+                if args.containerized == "docker"
+                else ""
+            )
             cmd = f"""
         {args.containerized} run \\
         {extra} \\
@@ -371,7 +426,7 @@ def prepare():
 @check_ilastik
 def train():
     """Inputs are the files in ilastik/*.h5"""
-    if args.step == 'all' and args.ilastik_model is not None:
+    if args.step == "all" and args.ilastik_model is not None:
         LOGGER.info("Pre-trained model provided. Skipping training step.")
     else:
         LOGGER.info("No model provided. Launching interactive ilastik session.")
@@ -387,7 +442,12 @@ def predict():
         --project {args.ilastik_model} \\
         """
     # Shell expansion of input files won't happen in subprocess call
-    cmd += " ".join([x.replace(" ", r"\ ") for x in glob(f"{args.dirs['analysis']}/*_s2.h5")])
+    cmd += " ".join(
+        [
+            x.replace(" ", r"\ ")
+            for x in glob(f"{args.dirs['analysis']}/*_s2.h5")
+        ]
+    )
     run_shell_command(cmd)
 
 
@@ -395,8 +455,9 @@ def predict():
 def segment():
     extra = (
         "--name cellprofiler_segment --rm"
-        if args.containerized == 'docker'
-        else "")
+        if args.containerized == "docker"
+        else ""
+    )
 
     if args.containerized:
         cmd = f"""{args.containerized} run \\
@@ -449,8 +510,9 @@ def quantify():
     if args.containerized:
         extra = (
             "--name cellprofiler_quantify --rm"
-            if args.containerized == 'docker'
-            else "")
+            if args.containerized == "docker"
+            else ""
+        )
         cmd = f"""{args.containerized} run \\
         {extra} \\
         {args.dirbind} {args.dirs['base']}:/data:rw \\
