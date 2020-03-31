@@ -407,7 +407,7 @@ def segment():
         {args.docker_image} \\
             --run-headless --run \\
             --plugins-directory /ImcPluginsCP/plugins/ \\
-            --pipeline /ImcSegmentationPipeline/cp3_pipelines/2_segment_ilastik.cppipe \\
+            --pipeline /ImcSegmentationPipeline/cp3_pipelines/2_segment_ilastik.lymphoma_adapted.cppipe \\
             -i /{args.dirs['analysis'].replace(args.dirs['base'], 'data')}/ \\
             -o /{args.dirs['analysis'].replace(args.dirs['base'], 'data')}/"""
     else:
@@ -415,7 +415,7 @@ def segment():
         cellprofiler \\
             --run-headless --run \\
             --plugins-directory {args.cellprofiler_plugin_path}/plugins/ \\
-            --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/2_segment_ilastik.cppipe \\
+            --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/2_segment_ilastik.lymphoma_adapted.cppipe \\
             -i {args.dirs['analysis']}/ \\
             -o {args.dirs['analysis']}/"""
     run_shell_command(cmd)
@@ -428,7 +428,7 @@ def quantify():
     pipeline_file = pjoin(
         args.cellprofiler_pipeline_path,
         "cp3_pipelines",
-        "3_measure_mask_basic.cppipe",
+        "3_measure_mask_basic.lymphoma_adapted.cppipe",
     )
     new_pipeline_file = pipeline_file.replace(".cppipe", ".new.cppipe")
 
@@ -459,7 +459,7 @@ def quantify():
         {args.docker_image} \\
             --run-headless --run \\
             --plugins-directory /ImcPluginsCP/plugins/ \\
-            --pipeline /ImcSegmentationPipeline/cp3_pipelines/3_measure_mask_basic.new.cppipe \\
+            --pipeline /ImcSegmentationPipeline/cp3_pipelines/3_measure_mask_basic.lymphoma_adapted.new.cppipe \\
             -i /{args.dirs['analysis'].replace(args.dirs['base'], 'data')}/ \\
             -o /{args.dirs['cp'].replace(args.dirs['base'], 'data')}"""
     else:
@@ -467,7 +467,7 @@ def quantify():
         cellprofiler
             --run-headless --run \\
             --plugins-directory {args.cellprofiler_plugin_path}/plugins/ \\
-            --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/3_measure_mask_basic.new.cppipe \\
+            --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/3_measure_mask_basic.lymphoma_adapted.new.cppipe \\
             -i {args.dirs['analysis']}/ \\
             -o {args.dirs['cp']}"""
 
