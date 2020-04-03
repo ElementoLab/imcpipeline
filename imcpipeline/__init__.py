@@ -1,5 +1,11 @@
+#! /usr/bin/env python
+
 import sys
 import logging
+import matplotlib.pyplot as plt
+
+
+plt.rcParams['svg.fonttype'] = 'none'
 
 
 def setup_logger(level=logging.DEBUG):
@@ -16,7 +22,5 @@ def setup_logger(level=logging.DEBUG):
 
 LOGGER = setup_logger()
 
+
 from imcpipeline.data_models import Project, IMCSample, ROI
-
-
-# TODO: solve passing files with spaces to ilastik predict

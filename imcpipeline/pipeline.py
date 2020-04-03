@@ -196,14 +196,7 @@ def get_cli_arguments():
     if args.csv_pannel is None:
         if args.input_dirs is not None:
             args.csv_pannel = pjoin(args.input_dirs[0], "example_pannel.csv")
-
-    # Update channel number with pannel for quantification step
-    if args.csv_pannel is not None:
-        # with open(args.csv_pannel, "r") as handle:
-        #     args.channel_number = len(handle.read().strip().split("\n")) - 1
-        args.channel_number = (
-            pd.read_csv(args.csv_pannel).query("full == 1").shape[0]
-        )
+    args.parsed_csv_pannel = pjoin(args.dirs['base'], "panel_data.acquired_channels.csv")
 
     args.suffix_mask = "_mask.tiff"
     args.suffix_probablities = "_Probabilities"
@@ -351,6 +344,55 @@ def prepare():
             args.dirs["ome"], fol_out=args.dirs["cp"]
         )
 
+    def join_panel_with_acquired_channels():
+        to_replace = [
+            ("-", ""),
+            ("_", ""),
+            (" ", ""),
+            ("INFgamma", "IFNgamma"),
+            ("pHistone", "pH"),
+            ("cmycp67", "cMYCp67")]
+        # read panel
+        panel = pd.read_csv(args.csv_pannel, index_col=0)
+        # read acquisition metadata
+        pattern = pjoin(args.dirs['ome'], "*", "*_AcquisitionChannel_meta.csv")
+        metas = glob(pattern)
+        if not metas:
+            raise ValueError(f"No '{pattern}' files  found!")
+        if len(metas) != 1:
+            raise ValueError(f"More than one '{pattern}' files found!")
+
+        acquired = pd.read_csv(metas[0])
+        acquired = acquired[['ChannelLabel', 'ChannelName', 'OrderNumber']]
+
+        # remove parenthesis from metal column
+        acquired["ChannelName"] = acquired["ChannelName"].str.replace("(", "").str.replace(")", "")
+        # clean up the channel name
+        for k, v in to_replace:
+            acquired["ChannelLabel"] = acquired["ChannelLabel"].str.replace(k, v)
+        acquired["ChannelLabel"] = acquired["ChannelLabel"].fillna("<EMPTY>")
+        acquired = acquired.loc[~acquired["ChannelLabel"].isin(['X', 'Y', 'Z']), :].drop_duplicates()
+        acquired.index = acquired["ChannelLabel"] + "(" + acquired["ChannelName"] + ")"
+
+        # Check matches, report missing
+        c = acquired.index.isin(panel.index)
+        if not c.all():
+            miss = '\n - '.join(acquired.loc[~c, 'ChannelLabel'])
+            raise ValueError(
+                f"Given reference panel '{args.csv_pannel}'"
+                f" is missing the following channels: \n - {miss}")
+
+        # align and sort by acquisition
+        joint_panel = acquired.join(panel).sort_values("OrderNumber")
+
+        # make sure order of ilastik channels is same as the original panel
+        # this important in order for the channels to always be the same
+        # and the ilastik models to be reusable
+        assert all(panel.query("ilastik == True").index == joint_panel.query("ilastik == True").index)
+
+        # If all is fine, save annotation with acquired channels and their order
+        joint_panel.to_csv(args.parsed_csv_pannel, index=True)
+
     def prepare_histocat():
         if not os.path.exists(args.dirs["histocat"]):
             os.makedirs(args.dirs["histocat"])
@@ -377,7 +419,7 @@ def prepare():
                         pjoin(sub_fol, img),
                         args.dirs["analysis"],
                         basename + suffix,
-                        pannelcsv=args.csv_pannel,
+                        pannelcsv=args.parsed_csv_pannel,
                         metalcolumn=args.csv_pannel_metal,
                         usedcolumn=col,
                         addsum=addsum,
@@ -418,9 +460,34 @@ def prepare():
         # -e DISPLAY=$DISPLAY \\
         run_shell_command(cmd)
 
-    export_acquisition()
-    prepare_histocat()
-    prepare_ilastik()
+    def fix_spaces_in_folders_files(directory):
+        for path, folders, files in os.walk(directory):
+            for f in files:
+                os.rename(os.path.join(path, f), os.path.join(path, f.replace(' ', '_')))
+            for i in range(len(folders)):
+                new_name = folders[i].replace(' ', '_')
+                os.rename(os.path.join(path, folders[i]), os.path.join(path, new_name))
+                folders[i] = new_name
+
+    e = os.path.exists(pjoin(args.dirs['cp'], 'acquisition_metadata.csv'))
+    if args.overwrite or (not args.overwrite and not e):
+        export_acquisition()
+    else:
+        LOGGER.info("Overwrite is false and files exist. Skipping export from MCD.")
+
+    e = len(glob(pjoin(args.dirs['analysis'], "*_full.tiff"))) > 0
+    if args.overwrite or (not args.overwrite and not e):
+        join_panel_with_acquired_channels()
+        prepare_histocat()
+    else:
+        LOGGER.info("Overwrite is false and files exist. Skipping conversion to OME-tiff.")
+    e = len(glob(pjoin(args.dirs['ilastik'], "*_w500_h500.h5"))) > 0
+    if args.overwrite or (not args.overwrite and not e):
+        prepare_ilastik()
+    else:
+        LOGGER.info("Overwrite is false and files exist. Skipping preparing ilastik files.")
+
+    fix_spaces_in_folders_files(args.dirs['base'])
 
 
 @check_ilastik
@@ -492,6 +559,10 @@ def quantify():
         "3_measure_mask_basic.lymphoma_adapted.cppipe",
     )
     new_pipeline_file = pipeline_file.replace(".cppipe", ".new.cppipe")
+
+    # Update channel number with pannel for quantification step
+    args.parsed_csv_pannel = pjoin(args.dirs['base'], "panel_data.acquired_channels.csv")
+    args.channel_number = pd.read_csv(args.parsed_csv_pannel).query("full == 1").shape[0]
 
     default_channel_number = r"\xff\xfe2\x004\x00"
     new_channel_number = (
