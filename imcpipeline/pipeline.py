@@ -95,10 +95,14 @@ def get_cli_arguments():
         "this is a string with the executable for cellprofiler. "
         "Supports UNIX pipes and bash builtins - use with caution. "
         "This could be used for example to activate an environment prior "
-        "to execution. Defaults to 'cellprofiler'.")
+        "to execution. Defaults to 'cellprofiler'."
+    )
     parser.add_argument(
-        "--cellprofiler-exec", dest="cellprofiler_exec",
-        default="cellprofiler", help=msg)
+        "--cellprofiler-exec",
+        dest="cellprofiler_exec",
+        default="cellprofiler",
+        help=msg,
+    )
     msg = "Path to CellProfiler pipeline. If not given will be cloned."
     parser.add_argument(
         "--cellprofiler-pipeline-path",
@@ -135,7 +139,8 @@ def get_cli_arguments():
     )
     msg = (
         "Column in CSV with boolean annotation of whether the channel"
-        " be used for ilastik model.")
+        " be used for ilastik model."
+    )
     parser.add_argument(
         "--csv-pannel-ilastik",
         dest="csv_pannel_ilastik",
@@ -205,7 +210,9 @@ def get_cli_arguments():
     if args.csv_pannel is None:
         if args.input_dirs is not None:
             args.csv_pannel = pjoin(args.input_dirs[0], "example_pannel.csv")
-    args.parsed_csv_pannel = pjoin(args.dirs['base'], "panel_data.acquired_channels.csv")
+    args.parsed_csv_pannel = pjoin(
+        args.dirs["base"], "panel_data.acquired_channels.csv"
+    )
 
     args.suffix_mask = "_mask.tiff"
     args.suffix_probablities = "_Probabilities"
@@ -360,11 +367,12 @@ def prepare():
             (" ", ""),
             ("INFgamma", "IFNgamma"),
             ("pHistone", "pH"),
-            ("cmycp67", "cMYCp67")]
+            ("cmycp67", "cMYCp67"),
+        ]
         # read panel
         panel = pd.read_csv(args.csv_pannel, index_col=0)
         # read acquisition metadata
-        pattern = pjoin(args.dirs['ome'], "*", "*_AcquisitionChannel_meta.csv")
+        pattern = pjoin(args.dirs["ome"], "*", "*_AcquisitionChannel_meta.csv")
         metas = glob(pattern)
         if not metas:
             raise ValueError(f"No '{pattern}' files  found!")
@@ -372,24 +380,33 @@ def prepare():
             raise ValueError(f"More than one '{pattern}' files found!")
 
         acquired = pd.read_csv(metas[0])
-        acquired = acquired[['ChannelLabel', 'ChannelName', 'OrderNumber']]
+        acquired = acquired[["ChannelLabel", "ChannelName", "OrderNumber"]]
 
         # remove parenthesis from metal column
-        acquired["ChannelName"] = acquired["ChannelName"].str.replace("(", "").str.replace(")", "")
+        acquired["ChannelName"] = (
+            acquired["ChannelName"].str.replace("(", "").str.replace(")", "")
+        )
         # clean up the channel name
         for k, v in to_replace:
-            acquired["ChannelLabel"] = acquired["ChannelLabel"].str.replace(k, v)
+            acquired["ChannelLabel"] = acquired["ChannelLabel"].str.replace(
+                k, v
+            )
         acquired["ChannelLabel"] = acquired["ChannelLabel"].fillna("<EMPTY>")
-        acquired = acquired.loc[~acquired["ChannelLabel"].isin(['X', 'Y', 'Z']), :].drop_duplicates()
-        acquired.index = acquired["ChannelLabel"] + "(" + acquired["ChannelName"] + ")"
+        acquired = acquired.loc[
+            ~acquired["ChannelLabel"].isin(["X", "Y", "Z"]), :
+        ].drop_duplicates()
+        acquired.index = (
+            acquired["ChannelLabel"] + "(" + acquired["ChannelName"] + ")"
+        )
 
         # Check matches, report missing
         c = acquired.index.isin(panel.index)
         if not c.all():
-            miss = '\n - '.join(acquired.loc[~c, 'ChannelLabel'])
+            miss = "\n - ".join(acquired.loc[~c, "ChannelLabel"])
             raise ValueError(
                 f"Given reference panel '{args.csv_pannel}'"
-                f" is missing the following channels: \n - {miss}")
+                f" is missing the following channels: \n - {miss}"
+            )
 
         # align and sort by acquisition
         joint_panel = acquired.join(panel).sort_values("OrderNumber")
@@ -397,7 +414,10 @@ def prepare():
         # make sure order of ilastik channels is same as the original panel
         # this important in order for the channels to always be the same
         # and the ilastik models to be reusable
-        assert all(panel.query("ilastik == True").index == joint_panel.query("ilastik == True").index)
+        assert all(
+            panel.query("ilastik == True").index
+            == joint_panel.query("ilastik == True").index
+        )
 
         # If all is fine, save annotation with acquired channels and their order
         joint_panel.to_csv(args.parsed_csv_pannel, index=True)
@@ -472,32 +492,43 @@ def prepare():
     def fix_spaces_in_folders_files(directory):
         for path, folders, files in os.walk(directory):
             for f in files:
-                os.rename(os.path.join(path, f), os.path.join(path, f.replace(' ', '_')))
+                os.rename(
+                    os.path.join(path, f),
+                    os.path.join(path, f.replace(" ", "_")),
+                )
             for i in range(len(folders)):
-                new_name = folders[i].replace(' ', '_')
-                os.rename(os.path.join(path, folders[i]), os.path.join(path, new_name))
+                new_name = folders[i].replace(" ", "_")
+                os.rename(
+                    os.path.join(path, folders[i]), os.path.join(path, new_name)
+                )
                 folders[i] = new_name
 
-    e = os.path.exists(pjoin(args.dirs['cp'], 'acquisition_metadata.csv'))
+    e = os.path.exists(pjoin(args.dirs["cp"], "acquisition_metadata.csv"))
     if args.overwrite or (not args.overwrite and not e):
         export_acquisition()
     else:
-        LOGGER.info("Overwrite is false and files exist. Skipping export from MCD.")
+        LOGGER.info(
+            "Overwrite is false and files exist. Skipping export from MCD."
+        )
 
-    e = len(glob(pjoin(args.dirs['analysis'], "*_full.tiff"))) > 0
+    e = len(glob(pjoin(args.dirs["analysis"], "*_full.tiff"))) > 0
     if args.overwrite or (not args.overwrite and not e):
         if not args.dry_run:
             join_panel_with_acquired_channels()
         prepare_histocat()
     else:
-        LOGGER.info("Overwrite is false and files exist. Skipping conversion to OME-tiff.")
-    e = len(glob(pjoin(args.dirs['ilastik'], "*_w500_h500.h5"))) > 0
+        LOGGER.info(
+            "Overwrite is false and files exist. Skipping conversion to OME-tiff."
+        )
+    e = len(glob(pjoin(args.dirs["ilastik"], "*_w500_h500.h5"))) > 0
     if args.overwrite or (not args.overwrite and not e):
         prepare_ilastik()
     else:
-        LOGGER.info("Overwrite is false and files exist. Skipping preparing ilastik files.")
+        LOGGER.info(
+            "Overwrite is false and files exist. Skipping preparing ilastik files."
+        )
 
-    fix_spaces_in_folders_files(args.dirs['base'])
+    fix_spaces_in_folders_files(args.dirs["base"])
 
 
 @check_ilastik
@@ -571,8 +602,12 @@ def quantify():
     new_pipeline_file = pipeline_file.replace(".cppipe", ".new.cppipe")
 
     # Update channel number with pannel for quantification step
-    args.parsed_csv_pannel = pjoin(args.dirs['base'], "panel_data.acquired_channels.csv")
-    args.channel_number = pd.read_csv(args.parsed_csv_pannel).query("full == 1").shape[0]
+    args.parsed_csv_pannel = pjoin(
+        args.dirs["base"], "panel_data.acquired_channels.csv"
+    )
+    args.channel_number = (
+        pd.read_csv(args.parsed_csv_pannel).query("full == 1").shape[0]
+    )
 
     default_channel_number = r"\xff\xfe2\x004\x00"
     new_channel_number = (
@@ -648,8 +683,6 @@ def uncertainty():
 
 
 def run_shell_command(cmd):
-    LOGGER.debug("Running command:\n%s" % textwrap.dedent(cmd) + "\n")
-
     # in case the command has unix pipes or bash builtins,
     # the subprocess call must have its own shell
     # this should only occur if cellprofiler is being run uncontainerized
@@ -657,6 +690,10 @@ def run_shell_command(cmd):
     symbol = any([x in cmd for x in ["&", "&&", "|"]])
     source = cmd.startswith("source")
     shell = True if (symbol or source) else False
+    LOGGER.debug(
+        "Running command%s:\n%s"
+        % (" in shell" if shell else "", textwrap.dedent(cmd) + "\n")
+    )
     c = re.findall(r"\S+", cmd.replace("\\\n", ""))
     if not args.dry_run:
         if shell:

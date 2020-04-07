@@ -89,7 +89,12 @@ def parse_arguments() -> argparse.Namespace:
     )
     msg = "Whether to do all steps except job submission."
     parser.add_argument(
-        "-d", "--dry-run", dest="dry_run", action="store_true", default=False, help=msg
+        "-d",
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        default=False,
+        help=msg,
     )
     msg = (
         "Attribute in sample annotation containing the path to the input files."
@@ -110,7 +115,10 @@ def parse_arguments() -> argparse.Namespace:
     )
     msg = "CSV file with metadata for all samples."
     parser.add_argument(dest="metadata", help=msg)
-    msg = "Whether all samples or only samples marker with a `toggle` column should be processed."
+    msg = (
+        "Whether all samples or only samples marker with a `toggle`"
+        "column should be processed."
+    )
     parser.add_argument(
         "--toggle", dest="toggle", action="store_true", default=True, help=msg
     )
