@@ -90,6 +90,15 @@ def get_cli_arguments():
     )
 
     # # if cellprofiler locations do not exist, clone to some default location
+    msg = (
+        "In case a containerized version of cellprofiler is not used, "
+        "this is a string with the executable for cellprofiler. "
+        "Supports UNIX pipes and bash builtins - use with caution. "
+        "This could be used for example to activate an environment prior "
+        "to execution. Defaults to 'cellprofiler'.")
+    parser.add_argument(
+        "--cellprofiler-exec", dest="cellprofiler_exec",
+        default="cellprofiler", help=msg)
     msg = "Path to CellProfiler pipeline. If not given will be cloned."
     parser.add_argument(
         "--cellprofiler-pipeline-path",
@@ -449,7 +458,7 @@ def prepare():
                 -o /{args.dirs['ilastik'].replace(args.dirs['base'], 'data')}/"""
         else:
             cmd = f"""
-            cellprofiler \\
+            {args.cellprofiler_exec} \\
                 --run-headless --run \\
                 --plugins-directory {args.cellprofiler_plugin_path}/plugins/ \\
                 --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/1_prepare_ilastik.cppipe \\
@@ -477,7 +486,8 @@ def prepare():
 
     e = len(glob(pjoin(args.dirs['analysis'], "*_full.tiff"))) > 0
     if args.overwrite or (not args.overwrite and not e):
-        join_panel_with_acquired_channels()
+        if not args.dry_run:
+            join_panel_with_acquired_channels()
         prepare_histocat()
     else:
         LOGGER.info("Overwrite is false and files exist. Skipping conversion to OME-tiff.")
@@ -540,7 +550,7 @@ def segment():
             -o /{args.dirs['analysis'].replace(args.dirs['base'], 'data')}/"""
     else:
         cmd = f"""
-        cellprofiler \\
+        {args.cellprofiler_exec} \\
             --run-headless --run \\
             --plugins-directory {args.cellprofiler_plugin_path}/plugins/ \\
             --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/2_segment_ilastik.lymphoma_adapted.cppipe \\
@@ -597,7 +607,7 @@ def quantify():
             -o /{args.dirs['cp'].replace(args.dirs['base'], 'data')}"""
     else:
         cmd = f"""
-        cellprofiler
+        {args.cellprofiler_exec} \\
             --run-headless --run \\
             --plugins-directory {args.cellprofiler_plugin_path}/plugins/ \\
             --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/3_measure_mask_basic.lymphoma_adapted.new.cppipe \\
@@ -639,10 +649,21 @@ def uncertainty():
 
 def run_shell_command(cmd):
     LOGGER.debug("Running command:\n%s" % textwrap.dedent(cmd) + "\n")
-    # cmd = cmd)
+
+    # in case the command has unix pipes or bash builtins,
+    # the subprocess call must have its own shell
+    # this should only occur if cellprofiler is being run uncontainerized
+    # and needs a command to be called prior such as conda activate, etc
+    symbol = any([x in cmd for x in ["&", "&&", "|"]])
+    source = cmd.startswith("source")
+    shell = True if (symbol or source) else False
     c = re.findall(r"\S+", cmd.replace("\\\n", ""))
     if not args.dry_run:
-        subprocess.call(c)
+        if shell:
+            LOGGER.debug("Running command in shell.")
+            subprocess.call(cmd, shell=shell)
+        else:
+            subprocess.call(c, shell=shell)
 
 
 if __name__ == "__main__":

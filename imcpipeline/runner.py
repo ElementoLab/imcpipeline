@@ -17,7 +17,10 @@ def main(cli=None) -> int:
     LOGGER.info("IMCpipeline runner")
     parser = parse_arguments()
     args, unknown = parser.parse_known_args(cli)
-    args.cli = unknown
+    # the extra arguments will be passed to the pipeline and
+    # compounded arguments (mostly the --cellprofiler-exec argument)
+    # should be quoted again
+    args.cli = ["'" + x + "'" if " " in x else x for x in unknown]
 
     LOGGER.info("Generating project from given CSV annotation.")
     prj = Project(csv_metadata=args.metadata, toggle=args.toggle)
@@ -59,9 +62,11 @@ def main(cli=None) -> int:
 
     LOGGER.info("Submitting jobs.")
     cmd = compute.get_active_package()["submission_command"]
-    for job in jobs:
-        print(cmd, job)
-        subprocess.call([cmd, job])
+
+    if not args.dry_run:
+        for job in jobs:
+            print(cmd, job)
+            subprocess.call([cmd, job])
 
     LOGGER.info("Finished with all samples.")
     return 0
@@ -81,6 +86,10 @@ def parse_arguments() -> argparse.Namespace:
     msg = "`Divvy` compute configuration to be used when submitting the jobs."
     parser.add_argument(
         "--divvy-configuration", dest="compute", choices=choices, help=msg
+    )
+    msg = "Whether to do all steps except job submission."
+    parser.add_argument(
+        "-d", "--dry-run", dest="dry_run", action="store_true", default=False, help=msg
     )
     msg = (
         "Attribute in sample annotation containing the path to the input files."
