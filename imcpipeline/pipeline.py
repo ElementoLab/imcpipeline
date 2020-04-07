@@ -7,8 +7,10 @@ import sys
 from argparse import ArgumentParser
 import subprocess
 import re
+import shutil
 import urllib.request
 import textwrap
+import tempfile
 
 import pandas as pd
 from imctools.scripts import ometiff2analysis
@@ -544,10 +546,18 @@ def train():
 
 @check_ilastik
 def predict():
+    # To allow multiple processes access to the ilastik model,
+    # we copy it to a temporary directory beforehand
+    tmpdir = tempfile.TemporaryDirectory()
+    parentdir = os.path.dirname(args.ilastik_model)
+    modelfile = os.path.basename(args.ilastik_model)
+    shutil.copy(parentdir, tmpdir.name)
+
+    tmpdir.name
     cmd = f"""{args.ilastik_sh_path} \\
         --headless \\
         --export_source probabilities \\
-        --project {args.ilastik_model} \\
+        --project {pjoin(parentdir, modelfile)} \\
         """
     # Shell expansion of input files won't happen in subprocess call
     cmd += " ".join(
