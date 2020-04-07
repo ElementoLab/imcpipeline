@@ -558,7 +558,7 @@ def predict():
     cmd = f"""{args.ilastik_sh_path} \\
         --headless \\
         --export_source probabilities \\
-        --project {pjoin(parentdir, modelfile)} \\
+        --project {pjoin(tmpdir.name, modelfile)} \\
         """
     # Shell expansion of input files won't happen in subprocess call
     cmd += " ".join(
