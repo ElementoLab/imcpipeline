@@ -76,7 +76,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     msg = "The corresponding attribute to be passed to the job scheduler."
-    parser.add_argument("--mem", dest="mem", default="32G", help=msg)
+    parser.add_argument("--mem", dest="mem", default="48G", help=msg)
     parser.add_argument("--cores", dest="cores", default=4, help=msg)
     parser.add_argument("--time", dest="time", default="02:00:00", help=msg)
     parser.add_argument(

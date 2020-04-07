@@ -7,10 +7,10 @@ import sys
 from argparse import ArgumentParser
 import subprocess
 import re
-import shutil
 import urllib.request
 import textwrap
 import tempfile
+from distutils.dir_util import copy_tree
 
 import pandas as pd
 from imctools.scripts import ometiff2analysis
@@ -546,7 +546,6 @@ def train():
 
 @check_ilastik
 def predict():
-    from distutils.dir_util import copy_tree
     # To allow multiple processes access to the ilastik model,
     # we copy it to a temporary directory beforehand
     tmpdir = tempfile.TemporaryDirectory()
@@ -610,7 +609,7 @@ def quantify():
         "cp3_pipelines",
         "3_measure_mask_basic.lymphoma_adapted.cppipe",
     )
-    new_pipeline_file = pipeline_file.replace(".cppipe", ".new.cppipe")
+    new_pipeline_file = tempfile.NamedTemporaryFile(dir='.', suffix='.cppipe').name
 
     # Update channel number with pannel for quantification step
     args.parsed_csv_pannel = pjoin(
@@ -644,11 +643,11 @@ def quantify():
         {extra} \\
         {args.dirbind} {args.dirs['base']}:/data:rw \\
         {args.dirbind} {args.cellprofiler_plugin_path}:/ImcPluginsCP:ro \\
-        {args.dirbind} {args.cellprofiler_pipeline_path}:/ImcSegmentationPipeline:ro \\
+        {args.dirbind} .:/ImcSegmentationPipeline:ro \\
         {args.docker_image} \\
             --run-headless --run \\
             --plugins-directory /ImcPluginsCP/plugins/ \\
-            --pipeline /ImcSegmentationPipeline/cp3_pipelines/3_measure_mask_basic.lymphoma_adapted.new.cppipe \\
+            --pipeline /ImcSegmentationPipeline/{os.path.basename(new_pipeline_file)} \\
             -i /{args.dirs['analysis'].replace(args.dirs['base'], 'data')}/ \\
             -o /{args.dirs['cp'].replace(args.dirs['base'], 'data')}"""
     else:
@@ -656,7 +655,7 @@ def quantify():
         {args.cellprofiler_exec} \\
             --run-headless --run \\
             --plugins-directory {args.cellprofiler_plugin_path}/plugins/ \\
-            --pipeline {args.cellprofiler_pipeline_path}/cp3_pipelines/3_measure_mask_basic.lymphoma_adapted.new.cppipe \\
+            --pipeline {new_pipeline_file} \\
             -i {args.dirs['analysis']}/ \\
             -o {args.dirs['cp']}"""
 
