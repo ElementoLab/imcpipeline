@@ -546,12 +546,13 @@ def train():
 
 @check_ilastik
 def predict():
+    from distutils.dir_util import copy_tree
     # To allow multiple processes access to the ilastik model,
     # we copy it to a temporary directory beforehand
     tmpdir = tempfile.TemporaryDirectory()
     parentdir = os.path.dirname(args.ilastik_model)
     modelfile = os.path.basename(args.ilastik_model)
-    shutil.copy(parentdir, tmpdir.name)
+    copy_tree(parentdir, tmpdir.name)
 
     tmpdir.name
     cmd = f"""{args.ilastik_sh_path} \\
