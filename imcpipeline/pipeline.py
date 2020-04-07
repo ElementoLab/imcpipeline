@@ -67,6 +67,7 @@ def main():
             LOGGER.info("Doing '%s' step." % args.step)
             eval(args.step)()
             LOGGER.info("Done with '%s' step." % args.step)
+    LOGGER.info("Pipeline run completed!")
 
 
 def get_cli_arguments():
@@ -609,7 +610,9 @@ def quantify():
         "cp3_pipelines",
         "3_measure_mask_basic.lymphoma_adapted.cppipe",
     )
-    new_pipeline_file = tempfile.NamedTemporaryFile(dir='.', suffix='.cppipe').name
+    new_pipeline_file = tempfile.NamedTemporaryFile(
+        dir=".", suffix=".cppipe"
+    ).name
 
     # Update channel number with pannel for quantification step
     args.parsed_csv_pannel = pjoin(
@@ -708,9 +711,16 @@ def run_shell_command(cmd):
     if not args.dry_run:
         if shell:
             LOGGER.debug("Running command in shell.")
-            subprocess.call(cmd, shell=shell)
+            code = subprocess.call(cmd, shell=shell)
         else:
-            subprocess.call(c, shell=shell)
+            code = subprocess.call(c, shell=shell)
+        if code != 0:
+            LOGGER.error(
+                "Process for command below failed with error:%s"
+                % textwrap.dedent(cmd)
+                + "Terminating pipeline.\n"
+            )
+            sys.exit(code)
 
 
 if __name__ == "__main__":
