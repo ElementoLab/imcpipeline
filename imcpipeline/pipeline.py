@@ -11,6 +11,7 @@ import urllib.request
 import textwrap
 import tempfile
 from distutils.dir_util import copy_tree
+import resource
 
 import pandas as pd
 from imctools.scripts import ometiff2analysis
@@ -721,6 +722,8 @@ def run_shell_command(cmd):
                 + "Terminating pipeline.\n"
             )
             sys.exit(code)
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        LOGGER.info("Maximum used memory so far: {:.2f}Gb".format(usage.ru_maxrss / 1e6))
 
 
 if __name__ == "__main__":
