@@ -44,7 +44,6 @@ DOCKER_IMAGE = "afrendeiro/cellprofiler"  # "cellprofiler/cellprofiler"
 def main():
     global args
     global LOGGER
-    LOGGER
 
     LOGGER.info("Starting pipeline")
     args = get_cli_arguments()
