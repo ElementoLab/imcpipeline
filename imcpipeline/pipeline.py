@@ -92,6 +92,13 @@ def get_cli_arguments():
         "--docker-image", dest="docker_image", default=DOCKER_IMAGE, help=msg
     )
 
+    msg = "Location to store external libraries if needed."
+    parser.add_argument(
+        "--external-lib-dir",
+        dest="external_lib_dir",
+        default="lib/external",
+        help=msg,
+    )
     # # if cellprofiler locations do not exist, clone to some default location
     msg = (
         "In case a containerized version of cellprofiler is not used, "
@@ -110,21 +117,21 @@ def get_cli_arguments():
     parser.add_argument(
         "--cellprofiler-pipeline-path",
         dest="cellprofiler_pipeline_path",
-        default=None,  # "src/ImcSegmentationPipeline/"
+        default=None,  # "lib/external/ImcSegmentationPipeline/"
         help=msg,
     )
     msg = "Path to CellProfiler plugins. If not given will be cloned."
     parser.add_argument(
         "--cellprofiler-plugin-path",
         dest="cellprofiler_plugin_path",
-        default=None,  # "/home/afr/Documents/workspace/clones/ImcPluginsCP"
+        default=None,  # "lib/external/ImcPluginsCP"
         help=msg,
     )
     msg = "Path to Ilastik. If not given will be downloaded."
     parser.add_argument(
         "--ilastik-path",
         dest="ilastik_sh_path",
-        default=None,  # "src/ilastik-1.3.3post2-Linux/run_ilastik.sh",
+        default=None,  # "lib/external/ilastik-1.3.3post2-Linux/run_ilastik.sh",
         help=msg,
     )
     # Input
@@ -258,8 +265,9 @@ def check_requirements(func):
 def get_zanotelli_code(arg, repo):
     if repo not in ["ImcSegmentationPipeline", "ImcPluginsCP"]:
         raise ValueError("Please choose only one of the two available repos.")
-    _dir = os.path.abspath(pjoin(os.path.curdir, "src", repo))
+    _dir = os.path.abspath(pjoin(os.path.curdir, args.external_lib_dir, repo))
     if not os.path.exists(_dir):
+        os.makedirs(os.path.dirname(_dir), exist_ok=True)
         url = f"https://github.com/BodenmillerGroup/{repo} {_dir}"
         cmd = f"git clone {url}"
         run_shell_command(cmd)
@@ -303,10 +311,11 @@ def check_ilastik(func):
 
     def inner():
         def_ilastik_sh_path = pjoin(
-            "src", "ilastik-1.3.3post2-Linux", "run_ilastik.sh"
+            args.external_lib_dir, "ilastik-1.3.3post2-Linux", "run_ilastik.sh"
         )
         if args.ilastik_sh_path is None:
             if not os.path.exists(def_ilastik_sh_path):
+                os.makedirs(args.external_lib_dir, exist_ok=True)
                 get_ilastik()
             args.ilastik_sh_path = def_ilastik_sh_path
         func()
@@ -337,10 +346,10 @@ def download_test_data():
         ),
     ]
 
-    for fn, url in urls:
-        fn = pjoin(output_dir, fn)
-        if os.path.exists(fn) is False:
-            urllib.request.urlretrieve(url, fn)
+    for fln, url in urls:
+        fln = pjoin(output_dir, fln)
+        if os.path.exists(fln) is False:
+            urllib.request.urlretrieve(url, fln)
 
 
 def prepare():
@@ -348,9 +357,9 @@ def prepare():
         re_fn = re.compile(args.file_regexp)
 
         for fol in args.dirs["input"]:
-            for fn in os.listdir(fol):
-                if re_fn.match(fn):
-                    fn_full = pjoin(fol, fn)
+            for fln in os.listdir(fol):
+                if re_fn.match(fln):
+                    fn_full = pjoin(fol, fln)
                     print(fn_full)
                     if args.dry_run:
                         continue
@@ -390,9 +399,9 @@ def prepare():
             acquired["ChannelName"].str.replace("(", "").str.replace(")", "")
         )
         # clean up the channel name
-        for k, v in to_replace:
+        for __k, __v in to_replace:
             acquired["ChannelLabel"] = acquired["ChannelLabel"].str.replace(
-                k, v
+                __k, __v
             )
         acquired["ChannelLabel"] = acquired["ChannelLabel"].fillna("<EMPTY>")
         acquired = acquired.loc[
@@ -403,9 +412,9 @@ def prepare():
         )
 
         # Check matches, report missing
-        c = acquired.index.isin(panel.index)
-        if not c.all():
-            miss = "\n - ".join(acquired.loc[~c, "ChannelLabel"])
+        __c = acquired.index.isin(panel.index)
+        if not __c.all():
+            miss = "\n - ".join(acquired.loc[~__c, "ChannelLabel"])
             raise ValueError(
                 f"Given reference panel '{args.csv_pannel}'"
                 f" is missing the following channels: \n - {miss}"
@@ -716,7 +725,7 @@ def run_shell_command(cmd):
             code = subprocess.call(c, shell=shell)
         if code != 0:
             LOGGER.error(
-                "Process for command below failed with error:%s"
+                "Process for command below failed with error:\n'%s'\n"
                 % textwrap.dedent(cmd)
                 + "Terminating pipeline.\n"
             )

@@ -23,7 +23,7 @@ def main(cli=None) -> int:
     args.cli = ["'" + x + "'" if " " in x else x for x in unknown]
 
     LOGGER.info("Generating project from given CSV annotation.")
-    prj = Project(csv_metadata=args.metadata, toggle=args.toggle)
+    prj = Project(sample_metadata=args.metadata, toggle=args.toggle)
 
     LOGGER.info("Setting compute settings using divvy.")
     compute = divvy.ComputingConfiguration()
@@ -32,6 +32,9 @@ def main(cli=None) -> int:
     # Now prepare job submission
     jobs = list()
     cli_args = " ".join(args.cli)
+    # the '--' is to separate the nargs from the positional in case there aren't more args
+    if cli_args == "":
+        cli_args = "--"
     for sample in prj.samples:
         LOGGER.info("Processing sample %s" % sample)
 
@@ -72,7 +75,7 @@ def main(cli=None) -> int:
     return 0
 
 
-def parse_arguments() -> argparse.Namespace:
+def parse_arguments() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
     msg = "The corresponding attribute to be passed to the job scheduler."
@@ -102,7 +105,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--attribute",
         dest="sample_file_attribute",
-        default="acquisition_date",
+        default="sample_name",
         help=msg,
     )
     msg = "The parent directory of `--attribute`, containting the input data."
