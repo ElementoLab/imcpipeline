@@ -7,7 +7,7 @@ from os.path import join as pjoin
 import divvy
 
 
-from imcpipeline import Project, LOGGER
+from imc import Project, LOGGER
 
 
 cli = ["--toggle", "metadata/annotation.csv"]

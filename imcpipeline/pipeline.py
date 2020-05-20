@@ -21,7 +21,7 @@ from imctools.scripts import convertfolder2imcfolder
 from imctools.scripts import exportacquisitioncsv
 
 
-from imcpipeline import LOGGER
+from imc import LOGGER
 
 
 STEPS = [
