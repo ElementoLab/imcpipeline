@@ -30,10 +30,10 @@ long_description = open(README_FILE).read()
 
 # setup
 setup(
-    name="imc",
+    name="imcpipeline",
     packages=find_packages(),
     use_scm_version={
-        "write_to": "imc/_version.py",
+        "write_to": "imcpipeline/_version.py",
         "write_to_template": '__version__ = "{version}"\n',
     },
     entry_points={
@@ -63,11 +63,11 @@ setup(
             "mass spectrometry",
         ]
     ),
-    url="https://github.com/elementolab/hyperion-cytof",
+    url="https://github.com/elementolab/imcpipeline",
     project_urls={
-        "Bug Tracker": "https://github.com/elementolab/hyperion-cytof/issues",
+        "Bug Tracker": "https://github.com/elementolab/imcpipeline/issues",
         # "Documentation": "https://imc.readthedocs.io",
-        "Source Code": "https://github.com/elementolab/hyperion-cytof",
+        "Source Code": "https://github.com/elementolab/imcpipeline",
     },
     author=u"Andre Rendeiro",
     author_email="andre.rendeiro@pm.me",

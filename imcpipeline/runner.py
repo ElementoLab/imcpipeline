@@ -2,12 +2,14 @@
 
 import sys
 import subprocess
+import logging
 import argparse
 from os.path import join as pjoin
 import divvy
 
 
-from imc import Project, LOGGER
+from imc import Project
+from imcpipeline import LOGGER as log
 
 
 cli = ["--toggle", "metadata/annotation.csv"]
@@ -36,14 +38,10 @@ def main(cli=None) -> int:
     if cli_args == "":
         cli_args = "--"
     for sample in prj.samples:
-        LOGGER.info("Processing sample %s" % sample)
+        LOGGER.info("Processing sample %s", sample)
 
-        input_dir = pjoin(
-            args.input_dir, str(getattr(sample, args.sample_file_attribute))
-        )
-        output_dir = pjoin(
-            args.output_dir, str(getattr(sample, args.sample_file_attribute))
-        )
+        input_dir = pjoin(args.input_dir, str(getattr(sample, args.sample_file_attribute)))
+        output_dir = pjoin(args.output_dir, str(getattr(sample, args.sample_file_attribute)))
 
         cmd = f"imcpipeline -i {input_dir} {cli_args} {output_dir}"
 
@@ -82,49 +80,26 @@ def parse_arguments() -> argparse.ArgumentParser:
     parser.add_argument("--mem", dest="mem", default="48G", help=msg)
     parser.add_argument("--cores", dest="cores", default=4, help=msg)
     parser.add_argument("--time", dest="time", default="02:00:00", help=msg)
-    parser.add_argument(
-        "--partition", dest="partition", default="panda", help=msg
-    )
+    parser.add_argument("--partition", dest="partition", default="panda", help=msg)
     choices = divvy.ComputingConfiguration().list_compute_packages()
     msg = "`Divvy` compute configuration to be used when submitting the jobs."
-    parser.add_argument(
-        "--divvy-configuration", dest="compute", choices=choices, help=msg
-    )
+    parser.add_argument("--divvy-configuration", dest="compute", choices=choices, help=msg)
     msg = "Whether to do all steps except job submission."
     parser.add_argument(
-        "-d",
-        "--dry-run",
-        dest="dry_run",
-        action="store_true",
-        default=False,
-        help=msg,
+        "-d", "--dry-run", dest="dry_run", action="store_true", default=False, help=msg,
     )
-    msg = (
-        "Attribute in sample annotation containing the path to the input files."
-    )
+    msg = "Attribute in sample annotation containing the path to the input files."
     parser.add_argument(
-        "--attribute",
-        dest="sample_file_attribute",
-        default="sample_name",
-        help=msg,
+        "--attribute", dest="sample_file_attribute", default="sample_name", help=msg,
     )
     msg = "The parent directory of `--attribute`, containting the input data."
-    parser.add_argument(
-        "--input-dir", dest="input_dir", default="data", help=msg
-    )
+    parser.add_argument("--input-dir", dest="input_dir", default="data", help=msg)
     msg = "Parent directory for output files."
-    parser.add_argument(
-        "--output-dir", dest="output_dir", default="processed", help=msg
-    )
+    parser.add_argument("--output-dir", dest="output_dir", default="processed", help=msg)
     msg = "CSV file with metadata for all samples."
     parser.add_argument(dest="metadata", help=msg)
-    msg = (
-        "Whether all samples or only samples marker with a `toggle`"
-        "column should be processed."
-    )
-    parser.add_argument(
-        "--toggle", dest="toggle", action="store_true", default=True, help=msg
-    )
+    msg = "Whether all samples or only samples marker with a `toggle`" "column should be processed."
+    parser.add_argument("--toggle", dest="toggle", action="store_true", default=True, help=msg)
 
     return parser
 
