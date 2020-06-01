@@ -9,8 +9,10 @@ from glob import glob
 from os.path import join as pjoin
 import sys
 import argparse
+import shutil
 import re
 import tempfile
+from typing import Literal
 from distutils.dir_util import copy_tree
 
 import pandas as pd  # type: ignore
@@ -20,8 +22,15 @@ from imctools.scripts import probablity2uncertainty
 from imctools.scripts import convertfolder2imcfolder
 from imctools.scripts import exportacquisitioncsv
 
-from imcpipeline import config as cfg, LOGGER as log, DOCKER_IMAGE
-from imcpipeline.utils import run_shell_command, prep_demo, check_ilastik, check_requirements
+from imcpipeline import config as cfg  # type: ignore
+from imcpipeline import LOGGER as log, DOCKER_IMAGE
+from imcpipeline.utils import (
+    run_shell_command,
+    prep_demo,
+    check_ilastik,
+    check_requirements,
+    docker_or_singularity,
+)
 
 
 STEPS = [
@@ -38,7 +47,7 @@ STEPS_INDEX = dict(enumerate(STEPS))
 #  DIRS = ['base', 'input', 'analysis', 'ilastik', 'ome', 'cp', 'histocat' 'uncertainty']
 
 
-def main() -> None:
+def main() -> int:
     log.info("Starting pipeline")
     cfg.args = get_cli_arguments()
 
@@ -58,13 +67,14 @@ def main() -> None:
         if cfg.args.step == "all":
             for step in STEPS:
                 log.info("Doing '%s' step.", step)
-                globals()[step]()
+                code = globals()[step]()
                 log.info("Done with '%s' step.", step)
         else:
             log.info("Doing '%s' step.", cfg.args.step)
-            globals()[cfg.args.step]()
+            code = globals()[cfg.args.step]()
             log.info("Done with '%s' step.", cfg.args.step)
     log.info("Pipeline run completed!")
+    return code
 
 
 def get_cli_arguments() -> argparse.Namespace:
@@ -103,7 +113,7 @@ def get_cli_arguments() -> argparse.Namespace:
         "to execution. Defaults to 'cellprofiler'."
     )
     parser.add_argument(
-        "--cellprofiler-exec", dest="cellprofiler_exec", default="cellprofiler", help=msg,
+        "--cellprofiler-exec", dest="cellprofiler_exec", default=None, help=msg,
     )
     msg = "Path to CellProfiler pipeline. If not given will be cloned."
     parser.add_argument(
@@ -192,6 +202,19 @@ def get_cli_arguments() -> argparse.Namespace:
     if args.containerized is not None:
         dirbind = {"docker": "-v", "singularity": "-B"}
         args.dirbind = dirbind[args.containerized]
+    elif args.containerized is None and args.cellprofiler_exec is not None:
+        pass
+    elif args.containerized is None and args.cellprofiler_exec is None:
+        if shutil.which("cellprofiler"):
+            args.cellprofiler_exec = "cellprofiler"
+        else:
+            log.info(
+                "Neither a container engine was given nor a cellprofiler executable was found."
+            )
+            try:
+                args.containerized = docker_or_singularity()
+            except ValueError:
+                parser.error("Neither docker, singularity or a cellprofiler executable were found!")
 
     if args.csv_pannel is None:
         if args.input_dirs is not None:
@@ -208,7 +231,11 @@ def get_cli_arguments() -> argparse.Namespace:
     return args
 
 
-def prepare() -> None:
+def prepare() -> Literal[0]:
+    """
+    Extract MCD files and prepare input for ilastik.
+    """
+
     def export_acquisition() -> None:
         re_fn = re.compile(cfg.args.file_regexp)
 
@@ -335,7 +362,7 @@ def prepare() -> None:
             {cfg.args.dirbind} {cfg.args.dirs['base']}:/data:rw \\
             {cfg.args.dirbind} {cfg.args.cellprofiler_plugin_path}:/ImcPluginsCP:ro \\
             {cfg.args.dirbind} {cfg.args.cellprofiler_pipeline_path}:/ImcSegmentationPipeline:ro \\
-            {cfg.args.docker_image} \\
+            {cfg.args.container_image} \\
                 --run-headless --run \\
                 --plugins-directory /ImcPluginsCP/plugins/ \\
                 --pipeline /ImcSegmentationPipeline/cp3_pipelines/1_prepare_ilastik.cppipe \\
@@ -389,11 +416,16 @@ def prepare() -> None:
         log.info("Overwrite is false and files exist. Skipping preparing ilastik files.")
 
     fix_spaces_in_folders_files(cfg.args.dirs["base"])
+    return 0
 
 
 @check_ilastik
 def train() -> int:
-    """Inputs are the files in ilastik/*.h5"""
+    """
+    Train an ilastik pixel classification model.
+
+    Inputs are the files in ilastik/*.h5
+    """
     if cfg.args.step == "all" and cfg.args.ilastik_model is not None:
         log.info("Pre-trained model provided. Skipping training step.")
         return 0
@@ -405,6 +437,9 @@ def train() -> int:
 
 @check_ilastik
 def predict() -> int:
+    """
+    Use a trained ilastik model to classify pixels in an IMC image.
+    """
     # Check if step should be skipped:
     # for each "_s2.h5" file there is a "_s2_Probabilities.tiff".
     inputs = glob(f"{cfg.args.dirs['analysis']}/*_s2.h5")
@@ -432,6 +467,9 @@ def predict() -> int:
 
 @check_requirements
 def segment() -> int:
+    """
+    Segment a TIFF with class probabilities into nuclei and cells using cellprofiler.
+    """
     # Check if step should be skipped:
     # for each "_s2_Probabilities.tiff" file there is a "_s2_Probabilities_mask.tiff".
     exists = [
@@ -450,7 +488,7 @@ def segment() -> int:
         {cfg.args.dirbind} {cfg.args.dirs['base']}:/data:rw \\
         {cfg.args.dirbind} {cfg.args.cellprofiler_plugin_path}:/ImcPluginsCP:ro \\
         {cfg.args.dirbind} {cfg.args.cellprofiler_pipeline_path}:/ImcSegmentationPipeline:ro \\
-        {cfg.args.docker_image} \\
+        {cfg.args.container_image} \\
             --run-headless --run \\
             --plugins-directory /ImcPluginsCP/plugins/ \\
             --pipeline /ImcSegmentationPipeline/cp3_pipelines/2_segment_ilastik.cppipe \\
@@ -469,6 +507,9 @@ def segment() -> int:
 
 @check_requirements
 def quantify() -> int:
+    """
+    Quantify the intensity of each channel in each single cell.
+    """
     # Check if step should be skipped:
     exists = os.path.exists(pjoin(cfg.args.dirs["cp"], "cell.csv"))
     if exists and not cfg.args.overwrite:
@@ -509,7 +550,7 @@ def quantify() -> int:
         {cfg.args.dirbind} {cfg.args.dirs['base']}:/data:rw \\
         {cfg.args.dirbind} {cfg.args.cellprofiler_plugin_path}:/ImcPluginsCP:ro \\
         {cfg.args.dirbind} {os.path.abspath(".")}:/ImcSegmentationPipeline:ro \\
-        {cfg.args.docker_image} \\
+        {cfg.args.container_image} \\
             --run-headless --run \\
             --plugins-directory /ImcPluginsCP/plugins/ \\
             --pipeline /ImcSegmentationPipeline/{os.path.basename(new_pipeline_file)} \\
@@ -532,9 +573,11 @@ def quantify() -> int:
 
 def uncertainty() -> int:
     """
+    Produce maps of model uncertainty.
 
     This step requires LZW decompression which is given by the `imagecodecs`
-    Python library (has extensive system-level dependencies in Ubuntu)."""
+    Python library (has extensive system-level dependencies in Ubuntu).
+    """
 
     # Check if step should be skipped:
     # for each "tiffs/*_s2_Probabilities.tiff" file there is
