@@ -18,18 +18,17 @@ except ImportError:
     __version__ = _get_version(root="..", relative_to=__file__)
 
 
-def setup_logging():
+def setup_logging(level=logging.INFO):
     # create logger with 'imcpipeline'
     logger = logging.getLogger("imcpipeline")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(level)
     # create file handler which logs even debug messages
     fh = logging.FileHandler(pjoin(os.path.expanduser("~"), ".imcpipeline.log"))
     fh.setLevel(logging.DEBUG)
-    # create console handler with a higher log level
+    # create console handler
     ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
+    ch.setLevel(level)
     # create formatter and add it to the handlers
-
     fmt = "imcpipeline.v{}:%(module)s:L%(lineno)d ".format(__version__)
     fmt += "(%(funcName)s) [%(levelname)s] %(asctime)s > %(message)s"
     formatter = logging.Formatter(fmt, datefmt="%Y-%m-%d %H:%M:%S")

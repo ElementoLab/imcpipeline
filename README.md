@@ -60,6 +60,18 @@ imcpipeline \
     -i input_dir -o output_dir
 ```
 
+If `docker` or `singularity` is not available, one could for example use a
+`conda` environment or a `virtualenv` environment activated only for the
+`cellprofiler` command like this:
+
+```
+imcpipeline \
+    --cellprofiler-exec \
+        "source ~/.miniconda2/bin/activate && conda activate cellprofiler && cellprofiler"
+    --ilastik-model model.ilp \
+    -i input_dir -o output_dir
+```
+
 To run one step only for a single sample, use the `-s/--step` argument:
 ```
 imcpipeline \
