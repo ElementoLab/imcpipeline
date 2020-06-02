@@ -156,6 +156,11 @@ def check_ilastik(func: Callable) -> Callable:
 
 
 def run_shell_command(cmd) -> int:
+    """
+    Run a system command.
+
+    Will detect whether a separate shell is required.
+    """
     # in case the command has unix pipes or bash builtins,
     # the subprocess call must have its own shell
     # this should only occur if cellprofiler is being run uncontainerized
@@ -177,8 +182,9 @@ def run_shell_command(cmd) -> int:
                 textwrap.dedent(cmd),
             )
             sys.exit(code)
-        usage = resource.getrusage(resource.RUSAGE_SELF)
-        log.info("Maximum used memory so far: {:.2f}Gb".format(usage.ru_maxrss / 1e6))
+        if not shell:
+            usage = resource.getrusage(resource.RUSAGE_SELF)
+            log.debug("Maximum used memory so far: {:.2f}Gb".format(usage.ru_maxrss / 1e6))
     return code
 
 

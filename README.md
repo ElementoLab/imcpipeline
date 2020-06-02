@@ -47,6 +47,7 @@ imcpipeline --demo
 
 The pipeline will try to use a local `cellprofiler` installation, `docker` or `singularity` in that
 order if any is available.
+Output files are in a `imcpipeline_demo_data` directory.
 
 ### Running on your data
 

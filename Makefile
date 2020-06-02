@@ -2,12 +2,6 @@
 
 all: install clean test
 
-move_models_out:
-	mv _models ../
-
-move_models_in:
-	mv ../_models ./
-
 clean_build:
 	rm -rf build/
 
@@ -25,52 +19,26 @@ _install:
 	python -m pip install dist/*-py3-none-any.whl --user --upgrade
 
 install:
-	${MAKE} move_models_out
 	${MAKE} clean
 	${MAKE} _install
 	${MAKE} clean
-	${MAKE} move_models_in
-
-clean_docs:
-	rm -rf docs/build/*
-
-docs:
-	${MAKE} -C docs html
-	xdg-open docs/build/html/index.html
 
 test:
-	python -m pytest imc/
-
-run:
-	python imcpipeline/runner.py \
-		--divvy slurm \
-		metadata/annotation.csv \
-			--ilastik-model _models/lymphoma/lymphoma.ilp \
-			--csv-pannel metadata/panel_markers.csv \
-			--cellprofiler-exec \
-				"source ~/.miniconda2/bin/activate && conda activate cellprofiler && cellprofiler"
-
-run_locally:
-	python imcpipeline/runner.py \
-		--divvy local \
-		metadata/annotation.csv \
-			--ilastik-model _models/lymphoma/lymphoma.ilp \
-			--csv-pannel metadata/panel_data.csv \
-			--container docker
-
-checkfailure:
-	grep -H "Killed" submission/*.log && \
-	grep -H "Error" submission/*.log && \
-	grep -H "CANCELLED" submission/*.log && \
-	grep -H "exceeded" submission/*.log
-
-fail: checkfailure
-
-checksuccess:
-	ls -hl processed/*/cpout/cell.csv
-
-succ: checksuccess
+	imcpipeline --demo
 
 
-.PHONY : move_models_out move_models_in clean_build clean_dist clean_eggs \
-clean _install install clean_docs docs run run_locally checkfailure fail checksuccess succ
+build:
+	python setup.py sdist bdist_wheel
+
+pypitest: build
+	twine \
+		upload \
+		-r pypitest dist/*
+
+pypi: build
+	twine \
+		upload \
+		dist/*
+
+
+.PHONY : clean_build clean_dist clean_eggs clean _install install test build pypitest pypi

@@ -1,4 +1,5 @@
 imcpipeline/docker/Dockerfile
 requirements*
 py.typed
+docs.md
 logo.png

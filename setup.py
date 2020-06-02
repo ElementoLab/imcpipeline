@@ -6,7 +6,7 @@ Installer script for the ``imc`` library and the ``imcpipeline`` pipeline.
 Install with ``pip install .``.
 """
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages  # type: ignore
 
 
 def parse_requirements(req_file):
@@ -66,7 +66,7 @@ setup(
     url="https://github.com/elementolab/imcpipeline",
     project_urls={
         "Bug Tracker": "https://github.com/elementolab/imcpipeline/issues",
-        # "Documentation": "https://imc.readthedocs.io",
+        "Documentation": "https://github.com/elementolab/imcpipeline/README.md",
         "Source Code": "https://github.com/elementolab/imcpipeline",
     },
     author=u"Andre Rendeiro",
@@ -76,7 +76,7 @@ setup(
     install_requires=requirements,
     tests_require=requirements_dev,
     extras_require={"dev": requirements_dev},
-    # package_data={"imc": ["config/*.yaml", "templates/*.html", "_models/*"]},
+    package_data={"imcpipeline": ["logo.png", "docs.md"]},
     data_files=[
         REQUIREMENTS_FILE,
         # "requirements/requirements.test.txt",
