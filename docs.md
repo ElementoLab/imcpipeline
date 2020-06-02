@@ -51,7 +51,7 @@ Similarly, if `cellprofiler` is not available but `docker` is, a docker image wi
 
 Simply arrange your input data in sub-directories (one per sample is recommended) and create a CSV file with a `sample_name` column (or a different  column name passed as `--attribute`) with the name of each sample.
 
-Further configuration of the pipeline run is possible by simply passing the arguments meant for `imcpipeline` *at the end* of the call to `imcrunner`. 
+Further configuration of the pipeline run is possible by simply passing the arguments meant for `imcpipeline` *at the end* of the call to `imcrunner`.
 
 To run jobs in diverse computing environments such as a local computer, a HPC cluster or cloud computing infrastructure, set up your system of choice by checking out [divvy](https://github.com/pepkit/divvy) and setting up an appropriate computing configuration. You might not even need to do anything. After installing `imcpipeline`, run `divvy list` to see the pre-distributed configurations.
 
@@ -70,3 +70,6 @@ imcrunner \
 
 To run only a subset of samples, set a column in the input CSV file named `toggle` to a positive value (e.g. `TRUE` or `1`), and activate the subsetting of samples with the `--toggle` option.
 
+### Logging
+
+`imcpipeline` will write a log file to `~/.imcpipeline.log.txt`, which can be used for debugging purposes.

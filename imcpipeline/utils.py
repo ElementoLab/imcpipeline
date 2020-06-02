@@ -23,10 +23,10 @@ import imcpipeline.config as cfg
 
 
 def docker_or_singularity() -> str:
-    for run in ["docker", "singularity"]:
-        if shutil.which(run):
-            log.debug("Selecting %s as container runner.", run)
-            return run
+    for runner in ["docker", "singularity"]:
+        if shutil.which(runner):
+            log.debug("Selecting '%s' as container runner.", runner)
+            return runner
     raise ValueError("Neither docker or singularity are available!")
 
 
@@ -37,10 +37,7 @@ def check_requirements(func: Callable) -> Callable:
 
     def inner():
         if cfg.args.containerized is not None:
-            if cfg.args.containerized == "docker":
-                if cfg.args.container_image != DOCKER_IMAGE:
-                    get_docker_image_or_build()
-            elif cfg.args.containerized == "singularity":
+            if cfg.args.containerized == "singularity":
                 cfg.args.container_image = "docker://" + cfg.args.container_image
         if cfg.args.cellprofiler_plugin_path is None:
             get_zanotelli_code("cellprofiler_plugin_path", "ImcPluginsCP")
@@ -95,8 +92,7 @@ def get_docker_image_or_build() -> None:
 
     if not check_image():
         log.debug("Did not find cellprofiler docker image. Will build.")
-        cmd = f"docker pull {DOCKER_IMAGE}"
-        run_shell_command(cmd)
+        build_docker_image()
     else:
         log.debug("Found docker image.")
     cfg.args.container_image = DOCKER_IMAGE

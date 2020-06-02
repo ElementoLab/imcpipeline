@@ -47,5 +47,5 @@ def setup_logging():
 
 LOGGER = setup_logging()
 
-DOCKER_IMAGE = os.environ["USER"] + "/cellprofiler"
+DOCKER_IMAGE = "afrendeiro/cellprofiler"
 DEMO_ILASTIK_MODEL = "https://wcm.box.com/shared/static/4rlm4ty6e0uaf35cp7sm279w3anyoz76.zip"

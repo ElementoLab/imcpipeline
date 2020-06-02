@@ -12,7 +12,6 @@ import argparse
 import shutil
 import re
 import tempfile
-from typing import Literal
 from distutils.dir_util import copy_tree
 
 import pandas as pd  # type: ignore
@@ -98,7 +97,7 @@ def get_cli_arguments() -> argparse.Namespace:
         "--container", dest="containerized", default=None, choices=choices, help=msg,
     )
     msg = f"The container image to use. Defaults to {DOCKER_IMAGE}"
-    parser.add_argument("--docker-image", dest="docker_image", default=DOCKER_IMAGE, help=msg)
+    parser.add_argument("--image", dest="container_image", default=DOCKER_IMAGE, help=msg)
 
     msg = "Location to store external libraries if needed."
     parser.add_argument(
@@ -199,8 +198,8 @@ def get_cli_arguments() -> argparse.Namespace:
     dirs["uncertainty"] = pjoin(dirs["base"], "uncertainty")
     args.dirs = dirs
 
+    dirbind = {"docker": "-v", "singularity": "-B"}
     if args.containerized is not None:
-        dirbind = {"docker": "-v", "singularity": "-B"}
         args.dirbind = dirbind[args.containerized]
     elif args.containerized is None and args.cellprofiler_exec is not None:
         pass
@@ -213,8 +212,10 @@ def get_cli_arguments() -> argparse.Namespace:
             )
             try:
                 args.containerized = docker_or_singularity()
+                args.dirbind = dirbind[args.containerized]
             except ValueError:
                 parser.error("Neither docker, singularity or a cellprofiler executable were found!")
+            log.info("Found '%s', will use that.", args.containerized)
 
     if args.csv_pannel is None:
         if args.input_dirs is not None:
@@ -231,7 +232,7 @@ def get_cli_arguments() -> argparse.Namespace:
     return args
 
 
-def prepare() -> Literal[0]:
+def prepare() -> int:
     """
     Extract MCD files and prepare input for ilastik.
     """
