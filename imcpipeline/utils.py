@@ -14,7 +14,7 @@ import subprocess
 import re
 import urllib.request
 import shutil
-from typing import Callable, Union, Literal
+from typing import Callable, Union
 
 import pkg_resources
 
@@ -22,7 +22,7 @@ from imcpipeline import LOGGER as log, DOCKER_IMAGE, DEMO_ILASTIK_MODEL
 import imcpipeline.config as cfg
 
 
-def docker_or_singularity() -> Union[Literal["docker"], Literal["singularity"]]:
+def docker_or_singularity() -> str:
     for run in ["docker", "singularity"]:
         if shutil.which(run):
             log.debug("Selecting %s as container runner.", run)
