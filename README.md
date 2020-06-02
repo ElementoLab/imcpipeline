@@ -32,6 +32,8 @@ pip install imcpipeline
 ```
 
 Make sure to have an updated PIP version.
+Development and testing is only done for Linux. If anyone is interested in maintaining MacOS/Windows
+fell free to submit a PR.
 
 ## Quick start
 

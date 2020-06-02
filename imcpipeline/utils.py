@@ -6,15 +6,18 @@ Utilities for the imcpipeline.
 
 import sys
 import textwrap
+import tarfile
 import os
 import resource
 from os.path import join as pjoin
 import tempfile
 import subprocess
 import re
-import urllib.request
 import shutil
-from typing import Callable, Union
+import urllib.request as request
+import requests
+from contextlib import closing
+from typing import Callable
 
 import pkg_resources
 
@@ -22,10 +25,34 @@ from imcpipeline import LOGGER as log, DOCKER_IMAGE, DEMO_ILASTIK_MODEL
 import imcpipeline.config as cfg
 
 
+def download_file(url: str, output_file: str, chunk_size=1024) -> None:
+    """
+    Download a file and write to disk in chunks (not in memory).
+
+    Parameters
+    ----------
+    url : :obj:`str`
+        URL to download from.
+    output_file : :obj:`str`
+        Path to file as output.
+    chunk_size : :obj:`int`
+        Size in bytes of chunk to write to disk at a time.
+    """
+    if url.startswith("ftp://"):
+
+        with closing(request.urlopen(url)) as r:
+            with open(output_file, "wb") as f:
+                shutil.copyfileobj(r, f)
+    else:
+        response = requests.get(url, stream=True)
+        with open(output_file, "wb") as outfile:
+            outfile.writelines(response.iter_content(chunk_size=chunk_size))
+
+
 def docker_or_singularity() -> str:
     for runner in ["docker", "singularity"]:
         if shutil.which(runner):
-            log.debug("Selecting '%s' as container runner.", runner)
+            log.info("Selecting '%s' as container runner.", runner)
             return runner
     raise ValueError("Neither docker or singularity are available!")
 
@@ -105,14 +132,14 @@ def check_ilastik(func: Callable) -> Callable:
         url = "https://files.ilastik.org/"
         file = f"ilastik-{version}-Linux.tar.bz2"
         os.makedirs(cfg.args.external_lib_dir, exist_ok=True)
-        run_shell_command(f"wget -O {pjoin(cfg.args.external_lib_dir, file)} {url + file}")
-        run_shell_command(
-            f"wget -O {pjoin(cfg.args.external_lib_dir, file + '.sha256')} {url + file}" + ".sha256"
-        )
-        f"sha256sum -c {url + file + '.sha256'}"
-        run_shell_command(
-            f"tar xf -C {cfg.args.external_lib_dir} {pjoin(cfg.args.external_lib_dir, file)}"
-        )
+        log.info("Downloading ilastik archive.")
+        download_file(url + file, pjoin(cfg.args.external_lib_dir, file))
+        # download_file(url + file + ".sha256", pjoin(cfg.args.external_lib_dir, file) + ".sha256")
+        # f"sha256sum -c {url + file + '.sha256'}"
+        log.info("Extracting ilastik archive.")
+        tar = tarfile.open(pjoin(cfg.args.external_lib_dir, file), "r:bz2")
+        tar.extractall(cfg.args.external_lib_dir)
+        tar.close()
 
     def inner():
         def_ilastik_sh_path = pjoin(
@@ -183,7 +210,7 @@ def download_test_data(output_dir, overwrite=False) -> None:
             continue
         log.info("Downloading test file: '%s'", url)
         if not os.path.exists(fln):
-            urllib.request.urlretrieve(url, fln)
+            request.urlretrieve(url, fln)
 
 
 def download_test_model(output_dir, overwrite=False) -> None:
@@ -198,6 +225,6 @@ def download_test_model(output_dir, overwrite=False) -> None:
             log.debug("File exists, skipping: '%s'", url)
             continue
         log.info("Downloading test model: '%s'", url)
-        urllib.request.urlretrieve(url, zipfln)
+        request.urlretrieve(url, zipfln)
         log.info("Unzipping test model: '%s'", url)
         run_shell_command(f"unzip -d {output_dir} {zipfln}")
