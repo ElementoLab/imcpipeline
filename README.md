@@ -48,7 +48,7 @@ order if any is available.
 
 ### Running on your data
 
-To run the pipeline on real data, one simply needs to specify input and output directories. A trained `ilastik` model can be provided or 
+To run the pipeline on real data, one simply needs to specify input and output directories. A trained `ilastik` model can be provided and if not, the user will be prompted to train it.
 
 ```
 imcpipeline \
@@ -64,7 +64,7 @@ imcpipeline \
     -i input_dir -o output_dir
 ```
 
-To run the pipeline for various samples in a specific computing configuration ([more details in the documentation](imcpipeline)):
+To run the pipeline for various samples in a specific computing configuration ([more details in the documentation](docs.md)):
 
 ```
 imcrunner \
@@ -77,7 +77,7 @@ imcrunner \
 
 ## Documentation
 
-For additional details on the pipeline, [see the documentation](imcpipeline).
+For additional details on the pipeline, [see the documentation](docs.md).
 
 ## Related software
 
