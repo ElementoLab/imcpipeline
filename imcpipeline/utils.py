@@ -13,9 +13,10 @@ import tempfile
 import subprocess
 import re
 import urllib.request
-import pkg_resources
 import shutil
 from typing import Callable, Union, Literal
+
+import pkg_resources
 
 from imcpipeline import LOGGER as log, DOCKER_IMAGE, DEMO_ILASTIK_MODEL
 import imcpipeline.config as cfg

@@ -1,6 +1,11 @@
+<div align="center">
+<img src="logo.png" alt="logo"></img>
+</div>
+
+
 # Imaging mass cytometry pipeline
 
-This is a pipeline for processing imaging mass cytometry (IMC) data.
+This is a pipeline for the processing of imaging mass cytometry (IMC) data.
 
 It is largely based on [Vito Zanotelli's IMC pipeline]\
 (https://github.com/BodenmillerGroup/ImcSegmentationPipeline) and [other
