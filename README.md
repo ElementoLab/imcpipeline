@@ -1,4 +1,4 @@
-# Imaging mass cytometry
+# Imaging mass cytometry pipeline
 
 This is a pipeline for processing imaging mass cytometry (IMC) data.
 
@@ -37,13 +37,16 @@ pip install imcpipeline
 
 Make sure you have an up-to date PIP version.
 
-## Testing
+## Testing/demo
 
-Tests are still very limited, but you can run tests this way:
+You can run a demo dataset using the ``--emo`` flag:
 
 ```
-imcpipeline --demo [--container docker]
+imcpipeline --demo
 ```
+
+The pipeline will try to use a local `cellprofiler` installation, `docker` or `singularity` in that
+order if any is available.
 
 ## Documentation
 
