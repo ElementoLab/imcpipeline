@@ -8,15 +8,12 @@ from os.path import join as pjoin
 import divvy
 
 
-from imc import Project
+import pandas as pd
 from imcpipeline import LOGGER as log
 
 
-cli = ["--toggle", "metadata/annotation.csv"]
-
-
 def main(cli=None) -> int:
-    LOGGER.info("IMCpipeline runner")
+    log.info("IMCpipeline runner")
     parser = parse_arguments()
     args, unknown = parser.parse_known_args(cli)
     # the extra arguments will be passed to the pipeline and
@@ -24,10 +21,13 @@ def main(cli=None) -> int:
     # should be quoted again
     args.cli = ["'" + x + "'" if " " in x else x for x in unknown]
 
-    LOGGER.info("Generating project from given CSV annotation.")
-    prj = Project(sample_metadata=args.metadata, toggle=args.toggle)
+    log.info("Generating project from given CSV annotation.")
+    annot = pd.read_csv(args.metadata).set_index(args.sample_file_attribute)
+    if args.toggle:
+        log.info("Subsampling samples based on the `toggle` column.")
+        annot = annot.loc[annot["toggle"].isin([1, "1", True, "TRUE", "True"]), :]
 
-    LOGGER.info("Setting compute settings using divvy.")
+    log.info("Setting compute settings using divvy.")
     compute = divvy.ComputingConfiguration()
     compute.activate_package(args.compute)
 
@@ -37,15 +37,15 @@ def main(cli=None) -> int:
     # the '--' is to separate the nargs from the positional in case there aren't more args
     if cli_args == "":
         cli_args = "--"
-    for sample in prj.samples:
-        LOGGER.info("Processing sample %s", sample)
+    for sample, _ in annot.iterrows():
+        log.info("Processing sample %s", sample)
 
-        input_dir = pjoin(args.input_dir, str(getattr(sample, args.sample_file_attribute)))
-        output_dir = pjoin(args.output_dir, str(getattr(sample, args.sample_file_attribute)))
+        input_dir = pjoin(args.input_dir, sample)
+        output_dir = pjoin(args.output_dir, sample)
 
-        cmd = f"imcpipeline -i {input_dir} {cli_args} {output_dir}"
+        cmd = f"imcpipeline {cli_args} -i {input_dir} -o {output_dir}"
 
-        job_name = f"imcpipeline_{sample.name}"
+        job_name = f"imcpipeline_{sample}"
         output_prefix = pjoin("submission", job_name)
         job_file = output_prefix + ".sh"
         data = {
@@ -61,7 +61,7 @@ def main(cli=None) -> int:
         compute.write_script(job_file, data)
         jobs.append(job_file)
 
-    LOGGER.info("Submitting jobs.")
+    log.info("Submitting jobs.")
     cmd = compute.get_active_package()["submission_command"]
 
     if not args.dry_run:
@@ -69,7 +69,7 @@ def main(cli=None) -> int:
             print(cmd, job)
             subprocess.call([cmd, job])
 
-    LOGGER.info("Finished with all samples.")
+    log.info("Finished with all samples.")
     return 0
 
 
@@ -92,14 +92,17 @@ def parse_arguments() -> argparse.ArgumentParser:
     parser.add_argument(
         "--attribute", dest="sample_file_attribute", default="sample_name", help=msg,
     )
-    msg = "The parent directory of `--attribute`, containting the input data."
+    msg = "The parent directory of containting the input data."
     parser.add_argument("--input-dir", dest="input_dir", default="data", help=msg)
     msg = "Parent directory for output files."
     parser.add_argument("--output-dir", dest="output_dir", default="processed", help=msg)
     msg = "CSV file with metadata for all samples."
     parser.add_argument(dest="metadata", help=msg)
-    msg = "Whether all samples or only samples marker with a `toggle`" "column should be processed."
-    parser.add_argument("--toggle", dest="toggle", action="store_true", default=True, help=msg)
+    msg = (
+        "Whether all samples or only samples marked with a positive value in the `toggle`"
+        "column should be processed."
+    )
+    parser.add_argument("--toggle", dest="toggle", action="store_true", default=False, help=msg)
 
     return parser
 

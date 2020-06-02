@@ -65,7 +65,7 @@ def main() -> int:
         pass
     finally:
         if cfg.args.step == "all":
-            for step in STEPS:
+            for step in STEPS[:-1]:
                 log.info("Doing '%s' step.", step)
                 code = globals()[step]()
                 log.info("Done with '%s' step.", step)

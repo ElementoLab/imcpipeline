@@ -7,24 +7,15 @@
 
 This is a pipeline for the processing of imaging mass cytometry (IMC) data.
 
-It is largely based on [Vito Zanotelli's IMC pipeline]\
-(https://github.com/BodenmillerGroup/ImcSegmentationPipeline) and [other
-implementations](https://github.com/nf-core/imcyto) also exist.
-
+It is largely based on [Vito Zanotelli's pipeline](https://github.com/BodenmillerGroup/ImcSegmentationPipeline).
 
 This involves image- and channel-wise quality control, image preprocessing and
 filtering, feature selection and semi-supervised pixel classification,
 image segmentation into cell masks and cell quantification.
 
-The pipeline can be used in standalone mode or as a way to process multiple
-samples in parallel in different systems such as a local computer, on the cloud,
-or a high performance computing cluster (HPC) due to the use of [divvy]\
-(https://github.com/pepkit/divvy).
-
-This repo is for now hosting a [pipeline](imcpipeline/pipeline.py), a
-[cross-environment job submitter](imcpipeline/runner.py) for the pipeline,
-[OOP models for IMC data](imc/data_models) and other
-[various utilities](imc/utils.py).
+The pipeline can be used in standalone mode or with `imcrunner` in order to
+process multiple samples in a distributed way and in parallel such as a local
+computer, on the cloud, or a high performance computing cluster (HPC). This is due to the use of the light-weight computing configuration manager [divvy](https://github.com/pepkit/divvy).
 
 
 ## Requirements and installation
@@ -40,11 +31,13 @@ Install with:
 pip install imcpipeline
 ```
 
-Make sure you have an up-to date PIP version.
+Make sure to have an updated PIP version.
 
-## Testing/demo
+## Quick start
 
-You can run a demo dataset using the ``--emo`` flag:
+### Demo
+
+You can run a demo dataset using the ``--demo`` flag:
 
 ```
 imcpipeline --demo
@@ -53,10 +46,40 @@ imcpipeline --demo
 The pipeline will try to use a local `cellprofiler` installation, `docker` or `singularity` in that
 order if any is available.
 
+### Running on your data
+
+To run the pipeline on real data, one simply needs to specify input and output directories. A trained `ilastik` model can be provided or 
+
+```
+imcpipeline \
+    --container docker \
+    --ilastik-model model.ilp \
+    -i input_dir -o output_dir
+```
+
+To run one step only for a single sample, use the `-s/--step` argument:
+```
+imcpipeline \
+    --step segmentation \
+    -i input_dir -o output_dir
+```
+
+To run the pipeline for various samples in a specific computing configuration ([more details in the documentation](imcpipeline)):
+
+```
+imcrunner \
+    --divvy-configuration slurm \
+    metadata.csv \
+        --container docker \
+        --ilastik-model model.ilp \
+        -i input_dir -o output_dir
+```
+
 ## Documentation
 
-Documentation is for now mostly a skeleton but will be enlarged soon:
+For additional details on the pipeline, [see the documentation](imcpipeline).
 
-```bash
-make docs
-```
+## Related software
+
+ - [Vito Zanotelli's pipeline](https://github.com/BodenmillerGroup/ImcSegmentationPipeline);
+ - A similar pipeline implemented in [Nextflow](https://github.com/nf-core/imcyto).
