@@ -1,19 +1,20 @@
-![imcpipeline logo](logo.png)
+![imcpipeline logo](https://raw.githubusercontent.com/elementolab/imcpipeline/master/logo.png)
 
 # Imaging mass cytometry pipeline
 
 This is a pipeline for the processing of imaging mass cytometry (IMC) data.
 
 It is largely based on [Vito Zanotelli's pipeline](https://github.com/BodenmillerGroup/ImcSegmentationPipeline).
-
-This involves image- and channel-wise quality control, image preprocessing and
-filtering, feature selection and semi-supervised pixel classification,
-image segmentation into cell masks and cell quantification.
+It performs image preprocessing and filtering, uses
+[`ilastik`](https://www.ilastik.org/) for semi-supervised pixel classification,
+[`CellProfiler`](https://cellprofiler.org/) for image segmentation and
+quantification of single cells.
 
 The pipeline can be used in standalone mode or with `imcrunner` in order to
 process multiple samples in a distributed way and in parallel such as a local
-computer, on the cloud, or a high performance computing cluster (HPC). This is due to the use of the light-weight computing configuration manager [divvy](https://github.com/pepkit/divvy).
-
+computer, on the cloud, or a high performance computing cluster (HPC).
+This is due to the use of the light-weight computing configuration manager
+[divvy](https://github.com/pepkit/divvy).
 
 ## Requirements and installation
 
@@ -29,8 +30,8 @@ pip install imcpipeline
 ```
 
 Make sure to have an updated PIP version.
-Development and testing is only done for Linux. If anyone is interested in maintaining MacOS/Windows
-fell free to submit a PR.
+Development and testing is only done for Linux. If anyone is interested in
+maintaining this repository in MacOS/Windows fell free to submit a PR.
 
 ## Quick start
 
@@ -42,13 +43,15 @@ You can run a demo dataset using the ``--demo`` flag:
 imcpipeline --demo
 ```
 
-The pipeline will try to use a local `cellprofiler` installation, `docker` or `singularity` in that
-order if any is available.
+The pipeline will try to use a local `cellprofiler` installation, `docker` or
+`singularity` in that order if any is available.
 Output files are in a `imcpipeline_demo_data` directory.
 
 ### Running on your data
 
-To run the pipeline on real data, one simply needs to specify input and output directories. A trained `ilastik` model can be provided and if not, the user will be prompted to train it.
+To run the pipeline on real data, one simply needs to specify input and output
+directories. A trained `ilastik` model can be provided and if not, the user will
+be prompted to train it.
 
 ```
 imcpipeline \
@@ -64,7 +67,8 @@ imcpipeline \
     -i input_dir -o output_dir
 ```
 
-To run the pipeline for various samples in a specific computing configuration ([more details in the documentation](docs.md)):
+To run the pipeline for various samples in a specific computing configuration
+([more details in the documentation](docs.md)):
 
 ```
 imcrunner \
