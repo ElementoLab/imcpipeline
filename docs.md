@@ -1,13 +1,12 @@
-
-### Pipeline description
+# Pipeline description
 
 The pipeline has 6 steps, one being optional. Each can be performed individually (without) by passing the respective name as value to the `-s/--step` option in the command-line interface.
 
-#### 1. Prepare
+## 1. Prepare
 
 This step extracts the MCD file into OME-tiff format and for visualization with histoCAT, as well as preparing input files for `ilastik`.
 
-#### 2. Train
+## 2. Train
 
 This step uses `ilastik` to train a pixel classification model. The pipeline will at this point open `ilastik` graphical user interface to allow the user to perform labeling of image crops.
 
@@ -17,35 +16,41 @@ To skip this step, provide a pre-trained `ilastik` model with the `--ilastik-mod
 
 For the demo run, a pre-trained model is used.
 
-#### 3. Predict
+## 3. Predict
 
 This step uses the`ilastik` model trained in the previous step to classify pixels in full images.
 
-#### 4. Segment
+## 4. Segment
 
 The `segment` step uses the class probabilities for each pixel from the previous step to segment the image into a cell mask.
 
-#### 5. Quantify
+## 5. Quantify
 
 This step quantifies the intensity of each channel for each cell segmented in the previous step.
 
-#### 6. Uncertainty
+## 6. Uncertainty
 
 This last step is optional. Its purpose is to produce images that represent the `ilastik` model uncertainty for each pixel. This is useful to assess whether the pixel classification model is well calibrated. Areas with high uncertainty can be used for training in a iterative process.
 
-#### Other features
+## Other features
 
-##### Restartable
+### Restartable
 
 The pipeline will by default skip a certain step if its outputs exist. Use `--overwrite` to force the recreation of these files. This can be useful to run the pipeline in groups of steps for example.
 
-##### Dependencies included
+### Dependencies included
 
 The pipeline depends on `ilastik`. To facilitate the standalone usage of the pipeline, upon the first run `imcpipeline` will fetch ilastik executables. External software will be saved in a `lib/external` directory, or can be configured with the `--external-lib-dir` CLI option.
 
 Similarly, if `cellprofiler` is not available but `docker` is, a docker image will be build that included required CellProfiler plugins and the CellProfiler pipeline instruction files. The docker image will be called `$USER/cellprofiler`.
 
-### Distributed and parallel runs with `imcrunner`
+# Input files
+
+For now, this pipeline "phenocopies" the original method](https://github.com/BodenmillerGroup/ImcSegmentationPipeline/) by Vito Zanotelli, where the input are zip files containing a MCD file and txt files for each ROI. Simply point the pipeline to one or more parent directories containing these files with the `-i/--input-dir` option.
+
+In a near future, we will support using MCD files as input only too.
+
+# Distributed and parallel runs with `imcrunner`
 
 `imcpipeline` is distributed with `imcrunner`, a program that submits `imcpipeline` jobs to a desired computing configuration.
 
@@ -66,10 +71,14 @@ imcrunner \
         -i input_dir -o output_dir
 ```
 
-#### Additional options
+Jobs will be written to a `submission` directory, where a log file will also be produced for each job.
+
+## Additional options
 
 To run only a subset of samples, set a column in the input CSV file named `toggle` to a positive value (e.g. `TRUE` or `1`), and activate the subsetting of samples with the `--toggle` option.
 
-### Logging
+# Logging
 
-`imcpipeline` will write a log file to `~/.imcpipeline.log.txt`, which can be used for debugging purposes.
+`imcpipeline` will print its progress to stdout and write a log file to `~/.imcpipeline.log.txt`, which can be used for debugging purposes.
+
+If run with `imcrunner`, each process will have its own log next to the script used to run it (both in a `submission` directory).
