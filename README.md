@@ -1,6 +1,6 @@
 ![imcpipeline logo](https://raw.githubusercontent.com/elementolab/imcpipeline/master/logo.png)
 
-# Imaging mass cytometry pipeline
+# Imaging mass cytometry pipeline [![Build Status](https://travis-ci.org/ElementoLab/imcpipeline.svg?branch=master)](https://travis-ci.org/ElementoLab/imcpipeline)
 
 This is a pipeline for the processing of imaging mass cytometry (IMC) data.
 
