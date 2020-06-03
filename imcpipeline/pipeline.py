@@ -12,7 +12,6 @@ import argparse
 import shutil
 import re
 import tempfile
-from distutils.dir_util import copy_tree
 
 import pandas as pd  # type: ignore
 from imctools.scripts import ometiff2analysis  # type: ignore
@@ -449,17 +448,11 @@ def predict() -> int:
         log.info("All output predictions exist. Skipping prediction step.")
         return 0
 
-    # To allow multiple processes access to the ilastik model,
-    # we copy it to a temporary directory beforehand
-    tmpdir = tempfile.TemporaryDirectory()
-    parentdir = os.path.dirname(cfg.args.ilastik_model)
-    modelfile = os.path.basename(cfg.args.ilastik_model)
-    copy_tree(parentdir, tmpdir.name)
-
     cmd = f"""{cfg.args.ilastik_sh_path} \\
         --headless \\
+        --readonly \\
         --export_source probabilities \\
-        --project {pjoin(tmpdir.name, modelfile)} \\
+        --project {cfg.args.ilastik_model} \\
         """
     # Shell expansion of input files won't happen in subprocess call
     cmd += " ".join([x.replace(" ", r"\ ") for x in inputs])
