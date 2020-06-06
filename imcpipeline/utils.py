@@ -21,7 +21,7 @@ from typing import Callable
 
 import pkg_resources
 
-from imcpipeline import LOGGER as log, DOCKER_IMAGE, DEMO_ILASTIK_MODEL
+from imcpipeline import LOGGER as log, DOCKER_IMAGE, DEMO_DATA, DEMO_CSV, DEMO_ILASTIK_MODEL
 import imcpipeline.config as cfg
 
 
@@ -195,18 +195,9 @@ def prep_demo(overwrite=False) -> None:
 
 def download_test_data(output_dir, overwrite=False) -> None:
     os.makedirs(os.path.abspath(output_dir), exist_ok=True)
-    drop_root = "https://www.dropbox.com/s/"
-    end = ".zip?dl=1"
-    example_pannel_url = (
-        "https://raw.githubusercontent.com/BodenmillerGroup/"
-        "ImcSegmentationPipeline/development/config/example_pannel.csv"
-    )
     urls = [
-        ("example_pannel.csv", example_pannel_url),
-        (
-            "20170906_FluidigmONfinal_SE.zip",
-            drop_root + "0pdt1ke4b07v7zd/20170906_FluidigmONfinal_SE" + end,
-        ),
+        ("imcpipeline-example_pannel.csv", DEMO_CSV),
+        ("imcpipelin-demo_data.zip", DEMO_DATA),
     ]
 
     for fln, url in urls:

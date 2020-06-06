@@ -44,3 +44,5 @@ LOGGER = setup_logging()
 
 DOCKER_IMAGE = "afrendeiro/cellprofiler"
 DEMO_ILASTIK_MODEL = "https://wcm.box.com/shared/static/4rlm4ty6e0uaf35cp7sm279w3anyoz76.zip"
+DEMO_DATA = "https://wcm.box.com/shared/static/wdbntdtsq95dfyffodiz7kb5bmdj5x5u"
+DEMO_CSV = "https://wcm.box.com/shared/static/yy24b47sb730twi2zlmo3y4qvi7kc6xd"

@@ -136,7 +136,7 @@ def get_cli_arguments() -> argparse.Namespace:
     )
     # Input
     parser.add_argument("--file-regexp", dest="file_regexp", default=".*.zip")
-    msg = "Path to CSV annotation with panel information."
+    msg = "Path to CSV annotation with pannel information."
     parser.add_argument("--csv-pannel", dest="csv_pannel", default=None, help=msg)
     msg = "Column in CSV with metal tag annotation."
     parser.add_argument(
@@ -158,7 +158,6 @@ def get_cli_arguments() -> argparse.Namespace:
     # Pre-trained model for classification (ilastik)
     msg = "Path to pre-trained ilastik model. If not given will start interactive session."
     parser.add_argument("-m", "--ilastik-model", dest="ilastik_model", default=None, help=msg)
-    # /home/afr/projects/data/fluidigm_example_data/fluidigm_example_data.ilp
 
     msg = "Whether existing files should be overwritten."
     parser.add_argument("--overwrite", dest="overwrite", action="store_true")
@@ -182,7 +181,7 @@ def get_cli_arguments() -> argparse.Namespace:
     if args.demo:
         args.input_dirs = [os.path.abspath("imcpipeline_demo_data")]
         args.output_dir = "imcpipeline_demo_data"
-        args.csv_pannel = pjoin("imcpipeline_demo_data", "example_pannel.csv")
+        args.csv_pannel = pjoin("imcpipeline_demo_data", "imcpipeline-example_pannel.csv")
         args.ilastik_model = pjoin("imcpipeline_demo_data", "ilastik", "demo.ilp")
         args.step = "all"
     dirs = dict()
@@ -218,8 +217,8 @@ def get_cli_arguments() -> argparse.Namespace:
 
     if args.csv_pannel is None:
         if args.input_dirs is not None:
-            args.csv_pannel = pjoin(args.input_dirs[0], "example_pannel.csv")
-    args.parsed_csv_pannel = pjoin(args.dirs["base"], "panel_data.acquired_channels.csv")
+            args.csv_pannel = pjoin(args.input_dirs[0], "imcpipeline-example_pannel.csv")
+    args.parsed_csv_pannel = pjoin(args.dirs["base"], "pannel_data.acquired_channels.csv")
 
     args.suffix_mask = "_mask.tiff"
     args.suffix_probablities = "_Probabilities"
@@ -255,14 +254,14 @@ def prepare() -> int:
             cfg.args.dirs["ome"], fol_out=cfg.args.dirs["cp"]
         )
 
-    def join_panel_with_acquired_channels(directory=None) -> None:
+    def join_pannel_with_acquired_channels(directory=None) -> None:
         to_replace = [
             ("-", ""),
             ("_", ""),
             (" ", ""),
         ]
-        # read panel
-        panel = pd.read_csv(cfg.args.csv_pannel, index_col=0)
+        # read pannel
+        pannel = pd.read_csv(cfg.args.csv_pannel, index_col=0)
         # read acquisition metadata
         if directory is None:
             pattern = pjoin(cfg.args.dirs["ome"], "*", "*_AcquisitionChannel_meta.csv")
@@ -289,26 +288,26 @@ def prepare() -> int:
         acquired.index = acquired["ChannelLabel"] + "(" + acquired["ChannelName"] + ")"
 
         # Check matches, report missing
-        __c = acquired.index.isin(panel.index)
+        __c = acquired.index.isin(pannel.index)
         if not __c.all():
             miss = "\n - ".join(acquired.loc[~__c, "ChannelLabel"])
             raise ValueError(
-                f"Given reference panel '{cfg.args.csv_pannel}'"
+                f"Given reference pannel '{cfg.args.csv_pannel}'"
                 f" is missing the following channels: \n - {miss}"
             )
 
         # align and sort by acquisition
-        joint_panel = acquired.join(panel).sort_values("OrderNumber")
+        joint_pannel = acquired.join(pannel).sort_values("OrderNumber")
 
-        # make sure order of ilastik channels is same as the original panel
+        # make sure order of ilastik channels is same as the original pannel
         # this important in order for the channels to always be the same
         # and the ilastik models to be reusable
         assert all(
-            panel.query("ilastik == True").index == joint_panel.query("ilastik == True").index
+            pannel.query("ilastik == True").index == joint_pannel.query("ilastik == True").index
         )
 
         # If all is fine, save annotation with acquired channels and their order
-        joint_panel.to_csv(cfg.args.parsed_csv_pannel, index=True)
+        joint_pannel.to_csv(cfg.args.parsed_csv_pannel, index=True)
 
     def prepare_histocat() -> None:
         if not os.path.exists(cfg.args.dirs["histocat"]):
@@ -320,7 +319,7 @@ def prepare() -> int:
                 pjoin(cfg.args.dirs["ome"], fol), cfg.args.dirs["histocat"], dtype="uint16",
             )
 
-        panel = (
+        pannel = (
             cfg.args.parsed_csv_pannel
             if os.path.exists(cfg.args.parsed_csv_pannel)
             else cfg.args.csv_pannel
@@ -340,7 +339,7 @@ def prepare() -> int:
                         pjoin(sub_fol, img),
                         cfg.args.dirs["analysis"],
                         basename + suffix,
-                        pannelcsv=panel,
+                        pannelcsv=pannel,
                         metalcolumn=cfg.args.csv_pannel_metal,
                         usedcolumn=col,
                         addsum=addsum,
@@ -403,9 +402,9 @@ def prepare() -> int:
     if cfg.args.overwrite or (not cfg.args.overwrite and not e):
         if not cfg.args.dry_run:
             try:
-                join_panel_with_acquired_channels()
+                join_pannel_with_acquired_channels()
             except ValueError:
-                log.error("Failed formatting channel names with provided panel CSV metadata.")
+                log.error("Failed formatting channel names with provided pannel CSV metadata.")
         prepare_histocat()
     else:
         log.info("Overwrite is false and files exist. Skipping conversion to OME-tiff.")
@@ -518,12 +517,12 @@ def quantify() -> int:
     new_pipeline_file = tempfile.NamedTemporaryFile(dir=".", suffix=".cppipe").name
 
     # Update channel number with pannel for quantification step
-    panel = (
+    pannel = (
         cfg.args.parsed_csv_pannel
         if os.path.exists(cfg.args.parsed_csv_pannel)
         else cfg.args.csv_pannel
     )
-    cfg.args.channel_number = pd.read_csv(panel).query("full == 1").shape[0]
+    cfg.args.channel_number = pd.read_csv(pannel).query("full == 1").shape[0]
 
     default_channel_number = r"\xff\xfe2\x004\x00"
     new_channel_number = (
