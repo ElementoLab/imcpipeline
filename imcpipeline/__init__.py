@@ -37,10 +37,6 @@ def setup_logging(level=logging.INFO):
     # add the handlers to the logger
     logger.addHandler(fh)
     logger.addHandler(ch)
-
-    consoleHandler = logging.StreamHandler()
-    consoleHandler.setFormatter(formatter)
-    logger.addHandler(consoleHandler)
     return logger
 
 
