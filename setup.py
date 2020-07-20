@@ -31,7 +31,7 @@ long_description = open(README_FILE).read()
 # setup
 setup(
     name="imcpipeline",
-    packages=find_packages("imcpipeline"),
+    packages=find_packages(),
     use_scm_version={
         "write_to": "imcpipeline/_version.py",
         "write_to_template": '__version__ = "{version}"\n',
@@ -77,8 +77,4 @@ setup(
     tests_require=requirements_dev,
     extras_require={"dev": requirements_dev},
     package_data={"imcpipeline": ["logo.png", "docs.md"]},
-    data_files=[
-        REQUIREMENTS_FILE,
-        # "requirements/requirements.test.txt",
-    ],
 )
