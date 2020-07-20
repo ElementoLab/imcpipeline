@@ -79,6 +79,13 @@ imcpipeline \
     -i input_dir -o output_dir
 ```
 
+Or provide more than one consecutive step in the same way:
+```
+imcpipeline \
+    --step predict,segmentation \
+    -i input_dir -o output_dir
+```
+
 To run the pipeline for various samples in a specific computing configuration
 ([more details in the documentation](docs.md)):
 

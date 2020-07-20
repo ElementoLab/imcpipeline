@@ -31,7 +31,7 @@ long_description = open(README_FILE).read()
 # setup
 setup(
     name="imcpipeline",
-    packages=find_packages(),
+    packages=find_packages("imcpipeline"),
     use_scm_version={
         "write_to": "imcpipeline/_version.py",
         "write_to_template": '__version__ = "{version}"\n',

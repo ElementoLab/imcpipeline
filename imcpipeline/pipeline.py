@@ -68,9 +68,11 @@ def main() -> int:
                 code = globals()[step]()
                 log.info("Done with '%s' step.", step)
         else:
-            log.info("Doing '%s' step.", cfg.args.step)
-            code = globals()[cfg.args.step]()
-            log.info("Done with '%s' step.", cfg.args.step)
+            for step in cfg.args.step.split(","):
+                print(step)
+                log.info("Doing '%s' step.", step)
+                code = globals()[step]()
+                log.info("Done with '%s' step.", step)
     log.info("Pipeline run completed!")
     return code
 
@@ -119,6 +121,7 @@ def get_cli_arguments() -> argparse.Namespace:
         dest="cellprofiler_pipeline_path",
         default=None,  # "lib/external/ImcSegmentationPipeline/"
         help=msg,
+        type=os.path.abspath,
     )
     msg = "Path to CellProfiler plugins. If not given will be cloned."
     parser.add_argument(

@@ -21,7 +21,13 @@ from typing import Callable
 
 import pkg_resources
 
-from imcpipeline import LOGGER as log, DOCKER_IMAGE, DEMO_DATA, DEMO_CSV, DEMO_ILASTIK_MODEL
+from imcpipeline import (
+    LOGGER as log,
+    DOCKER_IMAGE,
+    DEMO_DATA,
+    DEMO_CSV,
+    DEMO_ILASTIK_MODEL,
+)
 import imcpipeline.config as cfg
 
 
@@ -65,11 +71,15 @@ def check_requirements(func: Callable) -> Callable:
     def inner():
         if cfg.args.containerized is not None:
             if cfg.args.containerized == "singularity":
-                cfg.args.container_image = "docker://" + cfg.args.container_image
+                cfg.args.container_image = (
+                    "docker://" + cfg.args.container_image
+                )
         if cfg.args.cellprofiler_plugin_path is None:
             get_zanotelli_code("cellprofiler_plugin_path", "ImcPluginsCP")
         if cfg.args.cellprofiler_pipeline_path is None:
-            get_zanotelli_code("cellprofiler_pipeline_path", "ImcSegmentationPipeline")
+            get_zanotelli_code(
+                "cellprofiler_pipeline_path", "ImcSegmentationPipeline"
+            )
         func()
 
     return inner
@@ -79,7 +89,9 @@ def get_zanotelli_code(arg: str, repo: str) -> None:
     """Download CellProfiler plugins from Zanotelli et al."""
     if repo not in ["ImcSegmentationPipeline", "ImcPluginsCP"]:
         raise ValueError("Please choose only one of the two available repos.")
-    _dir = os.path.abspath(pjoin(os.path.curdir, cfg.args.external_lib_dir, repo))
+    _dir = os.path.abspath(
+        pjoin(os.path.curdir, cfg.args.external_lib_dir, repo)
+    )
     if not os.path.exists(_dir):
         os.makedirs(os.path.dirname(_dir), exist_ok=True)
         url = f"https://github.com/BodenmillerGroup/{repo} {_dir}"
@@ -93,7 +105,9 @@ def build_docker_image():
     tmpdir = tempfile.TemporaryDirectory()
     os.makedirs(pjoin(tmpdir.name, "docker"), exist_ok=True)
 
-    dockerfile = pkg_resources.resource_filename("imcpipeline", "docker/Dockerfile")
+    dockerfile = pkg_resources.resource_filename(
+        "imcpipeline", "docker/Dockerfile"
+    )
     shutil.copy(dockerfile, pjoin(tmpdir.name, "docker", "Dockerfile"))
 
     cmd = f"docker -t {DOCKER_IMAGE} {pjoin(tmpdir.name, 'docker')}"
@@ -106,7 +120,11 @@ def get_docker_image_or_build() -> None:
     def check_image() -> bool:
         try:
             # check if exists
-            out = subprocess.check_output("docker images".split(" ")).decode().strip()
+            out = (
+                subprocess.check_output("docker images".split(" "))
+                .decode()
+                .strip()
+            )
             for line in out.split("\n")[1:]:
                 if line.split(" ")[0] == DOCKER_IMAGE:
                     return True
@@ -143,7 +161,9 @@ def check_ilastik(func: Callable) -> Callable:
 
     def inner():
         def_ilastik_sh_path = pjoin(
-            cfg.args.external_lib_dir, "ilastik-1.3.3post2-Linux", "run_ilastik.sh"
+            cfg.args.external_lib_dir,
+            "ilastik-1.3.3post2-Linux",
+            "run_ilastik.sh",
         )
         if cfg.args.ilastik_sh_path is None:
             if not os.path.exists(def_ilastik_sh_path):
@@ -168,7 +188,11 @@ def run_shell_command(cmd) -> int:
     symbol = any([x in cmd for x in ["&", "&&", "|"]])
     source = cmd.startswith("source")
     shell = bool(symbol or source)
-    log.debug("Running command%s:\n%s", " in shell" if shell else "", textwrap.dedent(cmd) + "\n")
+    log.debug(
+        "Running command%s:\n%s",
+        " in shell" if shell else "",
+        textwrap.dedent(cmd) + "\n",
+    )
     c = re.findall(r"\S+", cmd.replace("\\\n", ""))
     if not cfg.args.dry_run:
         if shell:
@@ -184,7 +208,11 @@ def run_shell_command(cmd) -> int:
             sys.exit(code)
         if not shell:
             usage = resource.getrusage(resource.RUSAGE_SELF)
-            log.debug("Maximum used memory so far: {:.2f}Gb".format(usage.ru_maxrss / 1e6))
+            log.debug(
+                "Maximum used memory so far: {:.2f}Gb".format(
+                    usage.ru_maxrss / 1e6
+                )
+            )
     return code
 
 
@@ -197,7 +225,7 @@ def download_test_data(output_dir, overwrite=False) -> None:
     os.makedirs(os.path.abspath(output_dir), exist_ok=True)
     urls = [
         ("imcpipeline-example_pannel.csv", DEMO_CSV),
-        ("imcpipelin-demo_data.zip", DEMO_DATA),
+        ("imcpipeline-demo_data.zip", DEMO_DATA),
     ]
 
     for fln, url in urls:
