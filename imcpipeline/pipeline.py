@@ -50,7 +50,10 @@ def main() -> int:
     cfg.args = get_cli_arguments()
 
     if cfg.args.demo:
-        log.info("Running demo data. Output will be in '%s'.", cfg.args.dirs["input"][0])
+        log.info(
+            "Running demo data. Output will be in '%s'.",
+            cfg.args.dirs["input"][0],
+        )
         prep_demo()
 
     for name, path in cfg.args.dirs.items():
@@ -95,14 +98,23 @@ def get_cli_arguments() -> argparse.Namespace:
         "Default is not using any but CellProfiler must be in PATH."
     )
     parser.add_argument(
-        "--container", dest="containerized", default=None, choices=choices, help=msg,
+        "--container",
+        dest="containerized",
+        default=None,
+        choices=choices,
+        help=msg,
     )
     msg = f"The container image to use. Defaults to {DOCKER_IMAGE}"
-    parser.add_argument("--image", dest="container_image", default=DOCKER_IMAGE, help=msg)
+    parser.add_argument(
+        "--image", dest="container_image", default=DOCKER_IMAGE, help=msg
+    )
 
     msg = "Location to store external libraries if needed."
     parser.add_argument(
-        "--external-lib-dir", dest="external_lib_dir", default=pjoin("lib", "external"), help=msg,
+        "--external-lib-dir",
+        dest="external_lib_dir",
+        default=pjoin("lib", "external"),
+        help=msg,
     )
     # # if cellprofiler locations do not exist, clone to some default location
     msg = (
@@ -140,42 +152,62 @@ def get_cli_arguments() -> argparse.Namespace:
     # Input
     parser.add_argument("--file-regexp", dest="file_regexp", default=".*.zip")
     msg = "Path to CSV annotation with pannel information."
-    parser.add_argument("--csv-pannel", dest="csv_pannel", default=None, help=msg)
+    parser.add_argument(
+        "--csv-pannel", dest="csv_pannel", default=None, help=msg
+    )
     msg = "Column in CSV with metal tag annotation."
     parser.add_argument(
-        "--csv-pannel-metal", dest="csv_pannel_metal", default="Metal Tag", help=msg,
+        "--csv-pannel-metal",
+        dest="csv_pannel_metal",
+        default="Metal Tag",
+        help=msg,
     )
     msg = "Column in CSV with boolean annotation of whether the channel be used for ilastik model."
     parser.add_argument(
-        "--csv-pannel-ilastik", dest="csv_pannel_ilastik", default="ilastik", help=msg,
+        "--csv-pannel-ilastik",
+        dest="csv_pannel_ilastik",
+        default="ilastik",
+        help=msg,
     )
-    parser.add_argument("--csv-pannel-full", dest="csv_pannel_full", default="full")
+    parser.add_argument(
+        "--csv-pannel-full", dest="csv_pannel_full", default="full"
+    )
     msg = (
         "Directory with input files. More than one value is possible "
         " -just make sure this option is not immediately before the positional argument."
     )
     parser.add_argument(
-        "-i", "--input-dirs", nargs="+", dest="input_dirs", default=None, help=msg,
+        "-i",
+        "--input-dirs",
+        nargs="+",
+        dest="input_dirs",
+        default=None,
+        help=msg,
     )
 
     # Pre-trained model for classification (ilastik)
     msg = "Path to pre-trained ilastik model. If not given will start interactive session."
-    parser.add_argument("-m", "--ilastik-model", dest="ilastik_model", default=None, help=msg)
+    parser.add_argument(
+        "-m", "--ilastik-model", dest="ilastik_model", default=None, help=msg
+    )
 
     msg = "Whether existing files should be overwritten."
     parser.add_argument("--overwrite", dest="overwrite", action="store_true")
 
     # Pipeline steps
-    choices = STEPS + [str(x) for x in range(len(STEPS))]
     msg = (
         "Step of the pipeline to perform. 'all' will perform all in sequence."
-        f"Options: {', '.join(choices)}"
+        f"Options: {', '.join(STEPS + [str(x) for x in range(len(STEPS))])}"
     )
-    parser.add_argument("-s", "--step", dest="step", default="all", choices=choices, help=msg)
+    parser.add_argument("-s", "--step", dest="step", default="all", help=msg)
     msg = "Whether to not actually run any command. Useful for testing."
-    parser.add_argument("-d", "--dry-run", dest="dry_run", action="store_true", help=msg)
+    parser.add_argument(
+        "-d", "--dry-run", dest="dry_run", action="store_true", help=msg
+    )
     msg = "Directory for output files."
-    parser.add_argument("-o", "--output-dir", dest="output_dir", default=None, help=msg)
+    parser.add_argument(
+        "-o", "--output-dir", dest="output_dir", default=None, help=msg
+    )
 
     # Parse and complete with derived info
     args = parser.parse_args()
@@ -184,8 +216,12 @@ def get_cli_arguments() -> argparse.Namespace:
     if args.demo:
         args.input_dirs = [os.path.abspath("imcpipeline_demo_data")]
         args.output_dir = "imcpipeline_demo_data"
-        args.csv_pannel = pjoin("imcpipeline_demo_data", "imcpipeline-example_pannel.csv")
-        args.ilastik_model = pjoin("imcpipeline_demo_data", "ilastik", "demo.ilp")
+        args.csv_pannel = pjoin(
+            "imcpipeline_demo_data", "imcpipeline-example_pannel.csv"
+        )
+        args.ilastik_model = pjoin(
+            "imcpipeline_demo_data", "ilastik", "demo.ilp"
+        )
         args.step = "all"
     dirs = dict()
     args.output_dir = os.path.abspath(args.output_dir)
@@ -215,13 +251,19 @@ def get_cli_arguments() -> argparse.Namespace:
                 args.containerized = docker_or_singularity()
                 args.dirbind = dirbind[args.containerized]
             except ValueError:
-                parser.error("Neither docker, singularity or a cellprofiler executable were found!")
+                parser.error(
+                    "Neither docker, singularity or a cellprofiler executable were found!"
+                )
             log.info("Found '%s', will use that.", args.containerized)
 
     if args.csv_pannel is None:
         if args.input_dirs is not None:
-            args.csv_pannel = pjoin(args.input_dirs[0], "imcpipeline-example_pannel.csv")
-    args.parsed_csv_pannel = pjoin(args.dirs["base"], "pannel_data.acquired_channels.csv")
+            args.csv_pannel = pjoin(
+                args.input_dirs[0], "imcpipeline-example_pannel.csv"
+            )
+    args.parsed_csv_pannel = pjoin(
+        args.dirs["base"], "pannel_data.acquired_channels.csv"
+    )
 
     args.suffix_mask = "_mask.tiff"
     args.suffix_probablities = "_Probabilities"
@@ -267,7 +309,9 @@ def prepare() -> int:
         pannel = pd.read_csv(cfg.args.csv_pannel, index_col=0)
         # read acquisition metadata
         if directory is None:
-            pattern = pjoin(cfg.args.dirs["ome"], "*", "*_AcquisitionChannel_meta.csv")
+            pattern = pjoin(
+                cfg.args.dirs["ome"], "*", "*_AcquisitionChannel_meta.csv"
+            )
         else:
             pattern = pjoin(directory, "*_AcquisitionChannel_meta.csv")
         metas = glob(pattern)
@@ -280,15 +324,21 @@ def prepare() -> int:
         acquired = acquired[["ChannelLabel", "ChannelName", "OrderNumber"]]
 
         # remove parenthesis from metal column
-        acquired["ChannelName"] = acquired["ChannelName"].str.replace("(", "").str.replace(")", "")
+        acquired["ChannelName"] = (
+            acquired["ChannelName"].str.replace("(", "").str.replace(")", "")
+        )
         # clean up the channel name
         for __k, __v in to_replace:
-            acquired["ChannelLabel"] = acquired["ChannelLabel"].str.replace(__k, __v)
+            acquired["ChannelLabel"] = acquired["ChannelLabel"].str.replace(
+                __k, __v
+            )
         acquired["ChannelLabel"] = acquired["ChannelLabel"].fillna("<EMPTY>")
         acquired = acquired.loc[
             ~acquired["ChannelLabel"].isin(["X", "Y", "Z"]), :
         ].drop_duplicates()
-        acquired.index = acquired["ChannelLabel"] + "(" + acquired["ChannelName"] + ")"
+        acquired.index = (
+            acquired["ChannelLabel"] + "(" + acquired["ChannelName"] + ")"
+        )
 
         # Check matches, report missing
         __c = acquired.index.isin(pannel.index)
@@ -306,7 +356,8 @@ def prepare() -> int:
         # this important in order for the channels to always be the same
         # and the ilastik models to be reusable
         assert all(
-            pannel.query("ilastik == True").index == joint_pannel.query("ilastik == True").index
+            pannel.query("ilastik == True").index
+            == joint_pannel.query("ilastik == True").index
         )
 
         # If all is fine, save annotation with acquired channels and their order
@@ -319,7 +370,9 @@ def prepare() -> int:
             if cfg.args.dry_run:
                 continue
             ome2micat.omefolder2micatfolder(
-                pjoin(cfg.args.dirs["ome"], fol), cfg.args.dirs["histocat"], dtype="uint16",
+                pjoin(cfg.args.dirs["ome"], fol),
+                cfg.args.dirs["histocat"],
+                dtype="uint16",
             )
 
         pannel = (
@@ -399,7 +452,9 @@ def prepare() -> int:
         log.info("Expanding directories from MCD files.")
         export_acquisition()
     else:
-        log.info("Overwrite is false and files exist. Skipping export from MCD.")
+        log.info(
+            "Overwrite is false and files exist. Skipping export from MCD."
+        )
 
     e = len(glob(pjoin(cfg.args.dirs["analysis"], "*_full.tiff"))) > 0
     if cfg.args.overwrite or (not cfg.args.overwrite and not e):
@@ -407,15 +462,21 @@ def prepare() -> int:
             try:
                 join_pannel_with_acquired_channels()
             except ValueError:
-                log.error("Failed formatting channel names with provided pannel CSV metadata.")
+                log.error(
+                    "Failed formatting channel names with provided pannel CSV metadata."
+                )
         prepare_histocat()
     else:
-        log.info("Overwrite is false and files exist. Skipping conversion to OME-tiff.")
+        log.info(
+            "Overwrite is false and files exist. Skipping conversion to OME-tiff."
+        )
     e = len(glob(pjoin(cfg.args.dirs["ilastik"], "*_w500_h500.h5"))) > 0
     if cfg.args.overwrite or (not cfg.args.overwrite and not e):
         prepare_ilastik()
     else:
-        log.info("Overwrite is false and files exist. Skipping preparing ilastik files.")
+        log.info(
+            "Overwrite is false and files exist. Skipping preparing ilastik files."
+        )
 
     fix_spaces_in_folders_files(cfg.args.dirs["base"])
     return 0
@@ -445,7 +506,10 @@ def predict() -> int:
     # Check if step should be skipped:
     # for each "_s2.h5" file there is a "_s2_Probabilities.tiff".
     inputs = glob(f"{cfg.args.dirs['analysis']}/*_s2.h5")
-    exists = [os.path.exists(f.replace("_s2.h5", "_s2_Probabilities.tiff")) for f in inputs]
+    exists = [
+        os.path.exists(f.replace("_s2.h5", "_s2_Probabilities.tiff"))
+        for f in inputs
+    ]
     if all(exists) and not cfg.args.overwrite:
         log.info("All output predictions exist. Skipping prediction step.")
         return 0
@@ -469,14 +533,22 @@ def segment() -> int:
     # Check if step should be skipped:
     # for each "_s2_Probabilities.tiff" file there is a "_s2_Probabilities_mask.tiff".
     exists = [
-        os.path.exists(f.replace("_s2_Probabilities.tiff", "_s2_Probabilities_mask.tiff"))
+        os.path.exists(
+            f.replace("_s2_Probabilities.tiff", "_s2_Probabilities_mask.tiff")
+        )
         for f in glob(f"{cfg.args.dirs['analysis']}/*_s2_Probabilities.tiff")
     ]
     if all(exists) and not cfg.args.overwrite:
-        log.info("Segmentations already exist for all images. Skipping segment step.")
+        log.info(
+            "Segmentations already exist for all images. Skipping segment step."
+        )
         return 0
 
-    extra = "--name cellprofiler_segment --rm" if cfg.args.containerized == "docker" else ""
+    extra = (
+        "--name cellprofiler_segment --rm"
+        if cfg.args.containerized == "docker"
+        else ""
+    )
 
     if cfg.args.containerized:
         cmd = f"""{cfg.args.containerized} run \\
@@ -515,9 +587,13 @@ def quantify() -> int:
     # For this step, the number of channels should be updated
     # in the pipeline file (line 126 and 137).
     pipeline_file = pjoin(
-        cfg.args.cellprofiler_pipeline_path, "cp3_pipelines", "3_measure_mask_basic.cppipe",
+        cfg.args.cellprofiler_pipeline_path,
+        "cp3_pipelines",
+        "3_measure_mask_basic.cppipe",
     )
-    new_pipeline_file = tempfile.NamedTemporaryFile(dir=".", suffix=".cppipe").name
+    new_pipeline_file = tempfile.NamedTemporaryFile(
+        dir=".", suffix=".cppipe"
+    ).name
 
     # Update channel number with pannel for quantification step
     pannel = (
@@ -529,7 +605,9 @@ def quantify() -> int:
 
     default_channel_number = r"\xff\xfe2\x004\x00"
     new_channel_number = (
-        str(str(cfg.args.channel_number).encode("utf-16")).replace("b'", "").replace("'", "")
+        str(str(cfg.args.channel_number).encode("utf-16"))
+        .replace("b'", "")
+        .replace("'", "")
     )
     log.info("Changing the channel number to %i.", cfg.args.channel_number)
 
@@ -540,7 +618,11 @@ def quantify() -> int:
             ohandle.write(cc)
 
     if cfg.args.containerized:
-        extra = "--name cellprofiler_quantify --rm" if cfg.args.containerized == "docker" else ""
+        extra = (
+            "--name cellprofiler_quantify --rm"
+            if cfg.args.containerized == "docker"
+            else ""
+        )
         cmd = f"""{cfg.args.containerized} run \\
         {extra} \\
         {cfg.args.dirbind} {cfg.args.dirs['base']}:/data:rw \\
@@ -588,21 +670,25 @@ def uncertainty() -> int:
         for f in glob(f"{cfg.args.dirs['analysis']}/*_s2_Probabilities.tiff")
     ]
     if all(exists) and not cfg.args.overwrite:
-        log.info("Segmentations already exist for all images. Skipping segment step.")
+        log.info(
+            "Segmentations already exist for all images. Skipping segment step."
+        )
         return 0
 
     for fn in os.listdir(cfg.args.dirs["ilastik"]):
         if fn.endswith(cfg.args.suffix_probablities + ".tiff"):
             log.info("Exporting uncertainties for image '%s'.", fn)
             probablity2uncertainty.probability2uncertainty(
-                pjoin(cfg.args.dirs["ilastik"], fn), cfg.args.dirs["uncertainty"]
+                pjoin(cfg.args.dirs["ilastik"], fn),
+                cfg.args.dirs["uncertainty"],
             )
 
     for fn in os.listdir(cfg.args.dirs["analysis"]):
         if fn.endswith(cfg.args.suffix_probablities + ".tiff"):
             log.info("Exporting uncertainties for image '%s'.", fn)
             probablity2uncertainty.probability2uncertainty(
-                pjoin(cfg.args.dirs["analysis"], fn), cfg.args.dirs["uncertainty"]
+                pjoin(cfg.args.dirs["analysis"], fn),
+                cfg.args.dirs["uncertainty"],
             )
 
     for fol in os.listdir(cfg.args.dirs["ome"]):
